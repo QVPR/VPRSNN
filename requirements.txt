@@ -1,0 +1,18 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file requirements.txt -c conda-forge
+# platform: linux-64
+python==3.7.9
+numpy
+matplotlib
+pathlib
+opencv
+tqdm
+pickle5
+brian2
+scikit-learn
+ipykernel
+numba
+cudatoolkit
+autopep8
+pandas
+seaborn

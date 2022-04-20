@@ -1,0 +1,21 @@
+name: vprsnn
+channels:
+  - conda-forge
+dependencies:
+  - python==3.7.9
+  - numpy
+  - matplotlib
+  - pathlib
+  - opencv
+  - tqdm
+  - pickle5
+  - brian2
+  - scikit-learn
+  - ipykernel
+  - numba
+  - cudatoolkit
+  - autopep8
+  - pandas
+  - seaborn
+
+
