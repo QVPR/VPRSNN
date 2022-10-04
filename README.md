@@ -3,7 +3,7 @@
 [![QUT Centre for Robotics](https://img.shields.io/badge/collection-QUT%20Robotics-%23043d71?style=flat-square)](https://qcr.ai)
 
 
-This repository contains code for our RA-L paper "Spiking Neural Networks for Visual Place Recognition via Weighted Neuronal Assignments" which will also be presented at ICRA 2022. DOI: [10.1109/LRA.2022.3149030](https://doi.org/10.1109/LRA.2022.3149030)
+This repository contains code for our RA-L paper "Spiking Neural Networks for Visual Place Recognition via Weighted Neuronal Assignments" which was also be presented at ICRA 2022. DOI: [10.1109/LRA.2022.3149030](https://doi.org/10.1109/LRA.2022.3149030)
 
 The pre-print version of the paper is available on [arxiv](https://arxiv.org/abs/2109.06452). 
 
