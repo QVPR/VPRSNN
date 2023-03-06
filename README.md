@@ -9,6 +9,10 @@ The pre-print version of the paper is available on [arxiv](https://arxiv.org/abs
 
 Video: https://www.youtube.com/watch?v=VGfv4ZVOMkw
 
+
+<span style="color:blue">[UPDATE] **We are excited to share that the code for our recent related paper "Ensembles of Compact, Region-specific & Regularized Spiking Neural Networks for Scalable Place Recognition" will also be added in this repository in a few weeks. Stay tuned!**</span>
+
+
 <p style="width: 50%; display: block; margin-left: auto; margin-right: auto">
   <img src="./resources/cover_photo.png" alt="VPRSNN method diagram"/>
 </p>
