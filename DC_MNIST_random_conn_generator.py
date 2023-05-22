@@ -97,13 +97,13 @@ def create_weights(dataPath, imWidth=28, imHeight=28, n_e=400, n_i=400, ending =
     np.save(dataPath+connNameAiAe + ending, weightList)
 
 
-def main():
+def main(args):
 
     np.random.seed(0)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n_e', type=int, default=400, help='Number of excitatory output neurons. The number of inhibitory neurons are the same.')
-    parser.add_argument('--ad_path', type=str, default='_offset0')
+    parser.add_argument('--n_e', type=int, default=args.n_e, help='Number of excitatory output neurons. The number of inhibitory neurons are the same.')
+    parser.add_argument('--ad_path', type=str, default=args.ad_path)
 
     parser.set_defaults()
     args = parser.parse_args()

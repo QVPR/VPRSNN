@@ -262,44 +262,29 @@ def create_snn_model(weight_path, num_training_examples, n_e, n_i, n_input, popu
 
 
 
-def main():
+modes = {
+    "train": "logfile_train",
+    "record": "logfile_record",
+    "calibrate": "logfile_calibrate",
+    "test": "logfile_test",
+}
 
-    dataset = 'nordland'
-    num_labels = 100
-    tc_ge = 1.0
-    tc_gi = 2.0 
-    intensity = 4 
 
-    test_mode = True
+def set_mode(mode):
+    
+    if mode in modes:
+        test_mode = True if mode != "train" else False
+        logfile_name = modes[mode]
+    else:
+        raise ValueError("Invalid mode.")
+    
+    return test_mode, logfile_name
+    
 
-    skip = 8
-    offset_after_skip = 0
-    update_interval = 600  
-    epochs = 60
-    n_e = 400
 
-    ad_path_test = "_test"
-    ad_path = "_offset{}".format(offset_after_skip)
+def main(args):
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default=dataset, help='Folder name of dataset to be used. Relative to this repo, the folder must exist in this directory: ./../data/')
-    parser.add_argument('--num_labels', type=int, default=num_labels, help='Number of distinct places to use from the dataset.')
-    parser.add_argument('--skip', type=int, default=skip, help='The number of images to skip between each place label.')
-    parser.add_argument('--offset_after_skip', type=int, default=offset_after_skip, help='The offset to apply for selecting places after skipping every n images.')
-    parser.add_argument('--update_interval', type=int, default=update_interval, help='The number of iterations to save at one time in training output matrix.')
-    parser.add_argument('--epochs', type=int, default=epochs, help='Number of sweeps through the dataset in training.')
-    parser.add_argument('--n_e', type=int, default=n_e, help='Number of excitatory output neurons in model. The number of inhibitory neurons are the same.')
-    parser.add_argument('--tc_ge', type=float, default=tc_ge, help='Time constant of conductance of excitatory synapses AeAi.')
-    parser.add_argument('--tc_gi', type=float, default=tc_gi, help='Time constant of conductance of inhibitory synapses AiAe.')
-    parser.add_argument('--intensity', type=int, default=intensity, help="Intensity scaling to change the range of input pixel values.")
 
-    parser.add_argument('--test_mode', dest="test_mode", action="store_true", help='Boolean indicator to switch between training and testing mode.')
-
-    parser.add_argument("--ad_path_test", type=str, default=ad_path_test, help='Additional string arguments for subfolder names to save testing outputs.')
-    parser.add_argument('--ad_path', type=str, default=ad_path, help='Additional string arguments for subfolder names to save outputs.')
-
-    parser.set_defaults(test_mode=test_mode)
-    args = parser.parse_args()
 
     weightsPath = './weights/weights_ne{}_L{}'.format(args.n_e, args.num_labels) + args.ad_path + '/'
     outputsPath = './outputs/outputs_ne{}_L{}'.format(args.n_e, args.num_labels) + args.ad_path + '/'
@@ -308,7 +293,7 @@ def main():
     Path(weightsPath).mkdir(parents=True, exist_ok=True)
     Path(outputsPath).mkdir(parents=True, exist_ok=True)
 
-    logfile_name = "logfile" if not args.test_mode else "logfile_test" 
+    test_mode, logfile_name = set_mode(args.mode)
     sys.stdout = Logger(outputsPath, logfile_name)
     print(args)
 
@@ -316,18 +301,14 @@ def main():
 
     train_data_path, test_data_path = get_train_test_datapath(org_data_path)
 
-    ad_path_test = args.ad_path_test if args.test_mode else ""
+    ad_path_test = args.ad_path_test if test_mode else ""
     skip = args.skip
-    num_labels = args.num_labels 
-    train_update_interval = args.update_interval 
-    test_mode = args.test_mode
-    n_e = args.n_e
+    num_labels = args.num_labels
     n_i = args.n_e
-    offset_after_skip = args.offset_after_skip  
-    num_training_epochs = args.epochs       
 
-    use_monitors = True 
+    use_monitors = False 
     repeat_no_spikes = False 
+
 
     # Set img width and height, also regenerate random initialised weights when img shape changes 
     imWidth = 28   
@@ -337,9 +318,21 @@ def main():
 
     np.random.seed(0)
 
-    training_data = processImageDataset(train_data_path, "train", imWidth, imHeight, num_patches, num_labels, skip, offset_after_skip)
+    training_data = processImageDataset(train_data_path, "train", imWidth, imHeight, num_patches, args.num_labels, skip, args.offset_after_skip)
 
-    testing_data = processImageDataset(test_data_path, "test", imWidth, imHeight, num_patches, num_labels, skip, offset_after_skip) 
+    if args.mode == "record":
+        offset_after_skip = 0
+        num_labels = args.num_cal_labels + args.num_test_labels
+    
+    if args.mode == "calibrate": 
+        offset_after_skip = 0
+        num_labels = args.num_cal_labels
+        
+    if args.mode == "test":
+        offset_after_skip = args.num_cal_labels
+        num_labels = args.num_test_labels
+    
+    testing_data = processImageDataset(test_data_path, "test", imWidth, imHeight, num_patches, num_labels=num_labels, skip=skip, offset_after_skip=offset_after_skip) 
 
     print("\nTraining labels:\n{}\n\nTesting labels:\n{}\n".format(training_data['y'].flatten(), testing_data['y'].flatten() ))
 
@@ -352,9 +345,9 @@ def main():
 
 
     weight_path = weightsPath if test_mode else random_path
-    num_examples = num_testing_imgs if test_mode else num_training_imgs * num_training_epochs            
-    update_interval = num_examples if test_mode else train_update_interval
-    num_training_examples =  num_training_imgs * num_training_epochs
+    num_examples = num_testing_imgs if test_mode else num_training_imgs * args.epochs            
+    update_interval = num_examples if test_mode else args.update_interval
+    num_training_examples =  num_training_imgs * args.epochs
     do_plot_performance = True    
 
     initial_resting_time = 0.5 * b2.second
@@ -368,7 +361,7 @@ def main():
 
     # create snn model 
     print("Create model")
-    snn_model = create_snn_model(weight_path, num_training_examples, n_e, n_i, n_input, population_name, Xe, Ae, test_mode=test_mode, use_monitors=use_monitors)
+    snn_model = create_snn_model(weight_path, num_training_examples, args.n_e, n_i, n_input, population_name, Xe, Ae, test_mode=test_mode, use_monitors=use_monitors)
 
     # run the simulation 
     labels = train_labels if not test_mode else test_labels
@@ -377,7 +370,7 @@ def main():
     figures = [1,2]
 
     if not test_mode:
-        plot_2d_input_weights(snn_model.connections[Xe+Ae], n_input, n_e, outputsPath, figures[1], tag="1")
+        plot_2d_input_weights(snn_model.connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1], tag="1")
         
     if do_plot_performance:
         performance = plot_initial_performance(num_examples, update_interval, outputsPath, figures[0])
@@ -388,11 +381,11 @@ def main():
     input_intensity = args.intensity 
     start_input_intensity = input_intensity
 
-    previous_spike_count = np.zeros(n_e)
-    assignments = np.zeros(n_e)
+    previous_spike_count = np.zeros(args.n_e)
+    assignments = np.zeros(args.n_e)
     input_numbers = np.zeros(num_examples)
     outputNumbers = np.zeros((num_examples, num_labels))
-    result_monitor = np.zeros((update_interval,n_e))
+    result_monitor = np.zeros((update_interval,args.n_e))
     previous_spike_count = np.copy(snn_model.spike_monitors[Ae].count[:])
 
     j = 0
@@ -403,7 +396,7 @@ def main():
         if test_mode:
             spike_rates = testing_data['x'][j%num_testing_imgs,:,:].reshape((n_input)) / input_intensity                  
         else:
-            normalize_weights(snn_model.connections, n_e)
+            normalize_weights(snn_model.connections, args.n_e)
             spike_rates = training_data['x'][j%num_training_imgs,:,:].reshape((n_input)) / input_intensity              
         
         snn_model.input_groups[Xe].rates = spike_rates * b2.Hz
@@ -412,13 +405,13 @@ def main():
         snn_model.run_network(single_example_time)
 
         if j % update_interval == 0 and j > 0:
-            assignments = get_new_assignments(result_monitor[:], input_numbers[j-update_interval : j], num_labels, n_e)
+            assignments = get_new_assignments(result_monitor[:], input_numbers[j-update_interval : j], num_labels, args.n_e)
 
             print("Unique labels learnt: \n", np.unique(assignments))
             np.save(outputsPath + "resultPopVecs" + str(j), result_monitor) 
 
             if not test_mode:                
-                plot_2d_input_weights(snn_model.connections[Xe+Ae], n_input, n_e, outputsPath, figures[1])                
+                plot_2d_input_weights(snn_model.connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1])                
                 save_connections(snn_model, weightsPath, str(j), save_all=False)
                 save_theta(snn_model.neuron_groups[Ae].theta, weightsPath, population_name, str(j))
 
@@ -436,7 +429,7 @@ def main():
             result_monitor[j%update_interval,:] = current_spike_count
             input_numbers[j] = testing_data['y'][j%num_testing_imgs][0] if test_mode else training_data['y'][j%num_training_imgs][0]
 
-            outputNumbers[j,:], summed_rates = get_recognized_number_ranking(assignments, result_monitor[j%update_interval,:], num_labels)
+            outputNumbers[j,:], summed_rates = get_recognized_number_ranking(assignments, result_monitor[j%update_interval,:], np.arange(args.offset_after_skip, args.offset_after_skip+num_labels))
 
             if j % update_interval == 0 and j > 0 and do_plot_performance: 
                 performance = plot_performance(performance, j, update_interval, outputNumbers, input_numbers, outputsPath, figures[0])
@@ -448,7 +441,8 @@ def main():
             input_intensity = start_input_intensity
             j += 1
                 
-        b2.device.delete(code=False)
+    
+    b2.device.delete(code=False)
 
     print('output numbers: \n', outputNumbers, '\nSummed rates: \n', summed_rates)
 
@@ -464,13 +458,13 @@ def main():
 
 
     # plot results
-    plot_2d_input_weights(snn_model.connections[Xe+Ae], n_input, n_e, outputsPath, figures[1], tag="3")
+    plot_2d_input_weights(snn_model.connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1], tag="3")
 
     if snn_model.rate_monitors:
-        pl.plot_rateMonitors(snn_model.rate_monitors, outputsPath, num_training_epochs, test_mode)
+        pl.plot_rateMonitors(snn_model.rate_monitors, outputsPath, args.epochs, test_mode)
 
     if snn_model.spike_monitors:
-        pl.plot_spikeMonitors(snn_model.spike_monitors, outputsPath, num_training_epochs, test_mode)
+        pl.plot_spikeMonitors(snn_model.spike_monitors, outputsPath, args.epochs, test_mode)
         pl.plot_spikeMonitorsCount(snn_model.spike_monitors, outputsPath)
 
     print('done')
@@ -479,4 +473,45 @@ def main():
 
 if __name__ == "__main__":
     
-    main()
+    
+    dataset = 'nordland'
+    num_labels = 5
+    tc_ge = 1.0
+    tc_gi = 0.5 
+    intensity = 4 
+    num_test_labels = 10
+
+    mode = "train"
+
+    skip = 8
+    offset_after_skip = 0
+    update_interval = num_labels * 10  
+    epochs = 20
+    n_e = 100
+
+    ad_path_test = "_test"
+    ad_path = "_offset{}".format(offset_after_skip)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', type=str, default=dataset, help='Folder name of dataset to be used. Relative to this repo, the folder must exist in this directory: ./../data/')
+    parser.add_argument('--num_labels', type=int, default=num_labels, help='Number of distinct places to use from the dataset.')
+    parser.add_argument('--num_test_labels', type=int, default=num_test_labels, help='Number of distinct places to use from the dataset for testing.')
+    parser.add_argument('--skip', type=int, default=skip, help='The number of images to skip between each place label.')
+    parser.add_argument('--offset_after_skip', type=int, default=offset_after_skip, help='The offset to apply for selecting places after skipping every n images.')
+    parser.add_argument('--update_interval', type=int, default=update_interval, help='The number of iterations to save at one time in training output matrix.')
+    parser.add_argument('--epochs', type=int, default=epochs, help='Number of sweeps through the dataset in training.')
+    parser.add_argument('--n_e', type=int, default=n_e, help='Number of excitatory output neurons in model. The number of inhibitory neurons are the same.')
+    parser.add_argument('--tc_ge', type=float, default=tc_ge, help='Time constant of conductance of excitatory synapses AeAi.')
+    parser.add_argument('--tc_gi', type=float, default=tc_gi, help='Time constant of conductance of inhibitory synapses AiAe.')
+    parser.add_argument('--intensity', type=int, default=intensity, help="Intensity scaling to change the range of input pixel values.")
+
+    parser.add_argument('--mode', type=str, default=mode, help='String indicator to define the mode (train, record, calibrate, test).')
+
+    parser.add_argument("--ad_path_test", type=str, default=ad_path_test, help='Additional string arguments for subfolder names to save testing outputs.')
+    parser.add_argument('--ad_path', type=str, default=ad_path, help='Additional string arguments for subfolder names to save outputs.')
+
+    parser.set_defaults()
+    args = parser.parse_args()
+    
+    
+    main(args)

@@ -55,74 +55,118 @@ class Logger(object):
         #you might want to specify some extra behavior here.
         pass 
     
+
+
+def get_training_neuronal_spikes(unique_assignments, use_weighted_na, all_assignments=[]):
+    '''
+    Get the characteristic information of output spikes in training 
+    '''
     
+    len_all_assignments = len(all_assignments) 
+    
+    sum_train_spikes_list = []
+    train_spikes_list = []
+    learnt_neurons_list = []
+    len_learnt_labels_list = []  
+    
+    if use_weighted_na != 1:
+        return sum_train_spikes_list, train_spikes_list, learnt_neurons_list, len_learnt_labels_list
+
+    for v in unique_assignments:
+        
+        all_train_spikes_all = np.array([ [int(x), all_assignments[x]] for x in range(len_all_assignments) if v in all_assignments[x]])
+        all_train_spikes = np.array([ x for x in all_train_spikes_all if (x[1].get(v) / sum(list(x[1].values()))) > 0.1 ])  
+        
+        sum_train_spikes = np.array([ sum(list(x[1].values()))  for x in all_train_spikes ])
+        sum_train_spikes_list.append(sum_train_spikes)
+        
+        train_spikes = np.array([ x[1].get(v) for x in all_train_spikes ])
+        train_spikes_list.append(train_spikes)
+
+        learnt_neurons = all_train_spikes[:, 0].astype(int) if len(all_train_spikes.shape) == 2 else all_train_spikes[:] 
+        learnt_neurons_list.append(learnt_neurons)
+        
+        len_learnt_labels = np.array([ len(list(x[1].values()))  for x in all_train_spikes ])
+        len_learnt_labels_list.append(len_learnt_labels)
 
 
-def get_recognized_number_ranking(assignments, spike_rates, num_labels, use_weighted_assignments=False, all_assignments=[]):
+    return sum_train_spikes_list, train_spikes_list, learnt_neurons_list, len_learnt_labels_list    
+
+
+def get_recognized_number_ranking(assignments, spike_rates, unique_assignments, sum_train_spikes_list=[], train_spikes_list=[], learnt_neurons_list=[], len_learnt_labels_list=[], use_weighted_na=0):
     '''
     Given the neuronal assignments, and the number of spikes fired for the image with the given label in testing, 
     predict the label of the corresponding image  
     '''
+    summed_rates = np.zeros(len(unique_assignments))
+    
+    if np.all(spike_rates == 0):
+        sorted_summed_rates = np.arange(-1, len(unique_assignments)-1)
+        return sorted_summed_rates, summed_rates
 
-    summed_rates = np.zeros(num_labels)
-
-    for i in range(num_labels):
-        assigned_neurons_indices = np.where(assignments == i)[0]  
+    for i, v in enumerate(unique_assignments):
+        assigned_neurons_indices = np.where(assignments == v)[0]  
         num_assignments = len(assigned_neurons_indices)
 
-        if num_assignments > 0:            
-            test_spikes = spike_rates[assignments == i]
+        if num_assignments == 0:            
+            continue 
+        
+        test_spikes = spike_rates[assignments == v]
+        
+        # 0: standard assignments 
+        if use_weighted_na == 0:            
+            summed_rates[i] = ( np.sum(test_spikes) / num_assignments )
 
-            if use_weighted_assignments and len(all_assignments) > 0: 
+        # 1: weighted assignments 
+        elif use_weighted_na == 1:
+            
+            sum_train_spikes = sum_train_spikes_list[i]
+            train_spikes = train_spikes_list[i]
+            learnt_neurons = learnt_neurons_list[i]
+            
+            len_learnt_labels = len_learnt_labels_list[i]
+            len_learnt_labels_reciprocal = (1/len_learnt_labels)
+            learnt_label_ratio = train_spikes / sum_train_spikes
+            
+            test_spikes = np.array(spike_rates[learnt_neurons])
+            norm_factor = ( np.sum(train_spikes[test_spikes != 0])  /  np.sum(train_spikes) ) if np.any(train_spikes) else 0 
 
-                all_train_spikes_all = np.array([ [x, all_assignments[x]] for x in range(len(all_assignments)) if i in all_assignments[x]])
-
-                all_train_spikes = np.array([ x for x in all_train_spikes_all if (x[1].get(i) / sum(list(x[1].values()))) > 0.1 ])    
-
-                sum_train_spikes = np.array([ sum(list(x[1].values()))  for x in all_train_spikes ])
-                train_spikes = np.array([ x[1].get(i) for x in all_train_spikes ])
-                learnt_neurons = np.array([ x[0] for x in all_train_spikes ])
-
-                len_learnt_labels = [ len(list(x[1].values()))  for x in all_train_spikes ]
-
-                test_spikes = np.array([ spike_rates[x] for x in range(len(spike_rates)) if x in learnt_neurons ])  
-
-                norm_factor = ( np.sum(train_spikes[test_spikes != 0])  /  np.sum(train_spikes) ) if np.any(train_spikes) else 0 
-
-                # a) Regularization by involvement 
-                test_spikes = np.array([ test_spikes[x] if len_learnt_labels[x] <= 0.02*num_labels else test_spikes[x]*(1/len_learnt_labels[x]) for x in range(len(test_spikes))  ]) 
-
-                # b) Normalization by response strength 
-                test_spikes = np.array([test_spikes[x] * ( train_spikes[x] / (sum_train_spikes[x]) ) for x in range(len(test_spikes)) ]) 
-
-                # c) Penalize relevant neurons that did not fire 
-                summed_rates[i] =  ( np.sum(test_spikes) ) * norm_factor if len(learnt_neurons) > 0 else 0   
-                
-            else:
-                summed_rates[i] = ( np.sum(test_spikes) / num_assignments )            
-
+            # a) Regularization by involvement 
+            regularised_indices = len_learnt_labels >= 0.02*len(unique_assignments)
+            test_spikes[regularised_indices] = test_spikes[regularised_indices] * len_learnt_labels_reciprocal[regularised_indices]
+            
+            # b) Normalization by response strength             
+            test_spikes = test_spikes * learnt_label_ratio
+            
+            # c) Penalize relevant neurons that did not fire 
+            summed_rates[i] =  ( np.sum(test_spikes) ) * norm_factor if len(learnt_neurons) > 0 else 0   
+        
+        # 2: spikes assignments 
+        else:
+            summed_rates[i] = np.sum(test_spikes)                       
+    
     if np.all(summed_rates == 0):
-        sorted_summed_rates = np.arange(-1, num_labels-1)
+        sorted_summed_rates = np.arange(-1, len(unique_assignments)-1)
     else: 
-        sorted_summed_rates = np.argsort(summed_rates)[::-1]
-
+        sorted_indices = np.argsort(summed_rates)[::-1]
+        sorted_summed_rates = unique_assignments[sorted_indices]
+        
     return sorted_summed_rates, summed_rates
 
 
-def get_new_assignments(result_monitor, input_numbers, num_labels, n_e):
+def get_new_assignments(result_monitor, input_numbers, n_e):
     '''
     Update the assignments of classes to neurons based on the spiking rate 
     '''
 
     assignments = np.ones(n_e) * -1 
-    input_nums = np.asarray(input_numbers)
     maximum_rate = np.zeros(n_e)  
 
-    for j in range(num_labels):
-        num_assignments = len(np.where(input_nums == j)[0])
+    for j in np.unique(input_numbers):
+        num_assignments = len(np.where(input_numbers == j)[0])
 
         if num_assignments > 0:
-            rate = np.sum(result_monitor[input_nums == j], axis = 0) / num_assignments
+            rate = np.sum(result_monitor[input_numbers == j], axis = 0) / num_assignments
         else:
             rate = np.zeros((n_e, 1))
 
@@ -134,20 +178,20 @@ def get_new_assignments(result_monitor, input_numbers, num_labels, n_e):
     return assignments
 
 
-def get_new_assignments_weighted(result_monitor, input_numbers, num_labels, n_e):
+
+def get_new_assignments_weighted(result_monitor, input_numbers, n_e):
     '''
     Update the assignments of all classes associated with neurons based on the spiking rate 
     '''
     
     assignments = [{} for _ in range(n_e)] 
-    input_nums = np.asarray(input_numbers)
 
-    for j in range(num_labels):
-        num_assignments = len(np.where(input_nums == j)[0])
+    for j in np.unique(input_numbers):
+        num_assignments = len(np.where(input_numbers == j)[0])
         maximum_rate = np.zeros(n_e) 
 
         if num_assignments > 0:
-            num_spikes = np.sum(result_monitor[input_nums == j], axis = 0)
+            num_spikes = np.sum(result_monitor[input_numbers == j], axis = 0)
             rate = num_spikes / num_assignments
         else:
             rate = np.zeros((n_e, 1))
@@ -155,7 +199,6 @@ def get_new_assignments_weighted(result_monitor, input_numbers, num_labels, n_e)
         for i in range(n_e):
             if rate[i] > maximum_rate[i]:
                 maximum_rate[i] = rate[i]                
-
                 if j in assignments[i]:
                     assignments[i][j] += num_spikes[i]
                 else:  
@@ -224,8 +267,6 @@ def get_precision_recall_f1_score(dMat):
     precision.append(1)
     recall.append(0)
 
-    print("Min value: {} Max value: {}\n".format(min_val, max_val))
-
     for threshold in thresholds:
 
         # get boolean of all indices of dists whose value is <= threshold 
@@ -269,9 +310,8 @@ def get_precision_recall_f1_score(dMat):
 
 def getAUCPR(precision, recall):
     AUC_PRs = auc(recall, precision)
-    AUC_PR_trap = np.trapz(precision, recall)
 
-    return AUC_PRs, AUC_PR_trap
+    return AUC_PRs
 
 
 def getRat100P(precision, recall):
@@ -287,15 +327,14 @@ def plot_precision_recall(dMat, data_path, fig_name='', label='', png_ending=".p
     
     precision, recall, f1_scores = get_precision_recall_f1_score(dMat)
 
-    AUC_PRs, AUC_PR_trap = getAUCPR(precision, recall)
-    print("\nArea under precision recall curve: \nsklearn AUC: {}\nnumpy trapz: {}\n".format(AUC_PRs, AUC_PR_trap))
+    AUC_PRs = getAUCPR(precision, recall)
+    print("\nArea under precision recall curve: \nsklearn AUC: {:.4f}\n".format(AUC_PRs))
 
     Rat100P = getRat100P(precision, recall)
-    print("\nR @ 100% P is: {}\n".format(Rat100P))
+    print("\nR @ 100% P is: {:.4f}\n".format(Rat100P))
 
     Pat100R = f1_scores[-1]
-    print("\nP a@ 100% R (last item of f1-score) is: {}\n".format(Pat100R))
-    print("\n\nf1 scores with wa: {}\n\n".format(f1_scores))
+    print("\nP a@ 100% R (last item of f1-score) is: {:.4f}\n".format(Pat100R))
 
     sn.set_context("paper", font_scale=2, rc={"lines.linewidth": 2})
 
@@ -306,7 +345,7 @@ def plot_precision_recall(dMat, data_path, fig_name='', label='', png_ending=".p
 
     plt.xlim(0, 1.05)
     plt.ylim(0, 1.05)
-    plt.legend(fontsize=10, loc='lower center') 
+    plt.legend() 
     plt.tight_layout()
     plt.savefig(data_path + "{}".format(fig_name) + png_ending)
     plt.close()
@@ -317,7 +356,6 @@ def plot_precision_recall(dMat, data_path, fig_name='', label='', png_ending=".p
 
     plt.xlabel("Recall")
     plt.ylabel("Precision")
-    plt.title("Precision and Recall")  
 
     plt.xlim(0, 1.05)
     plt.ylim(0, 1.05)
@@ -328,48 +366,47 @@ def plot_precision_recall(dMat, data_path, fig_name='', label='', png_ending=".p
 
     return Rat100P, AUC_PRs
 
+
+def compute_recall(gt, sorted_pred, numQ, n_values, data_path, name, allow_save=True): 
+
+    correct_at_n = np.zeros(len(n_values)) 
+    sorted_pred_transposed = np.transpose(sorted_pred)
+    for qIx, pred in enumerate(sorted_pred_transposed):
+        for i, n in enumerate(n_values):
+            # if in top N then also in top NN, where NN > N
+            if np.any(np.in1d(pred[:n], gt[qIx])):
+                correct_at_n[i:] += 1
+                break
+    recall_at_n = correct_at_n / numQ
+    all_recalls = {}  # make dict for output
+    for i, n in enumerate(n_values):
+        all_recalls[n] = recall_at_n[i]
+        print("====> Recall {}@{}: {:.4f}".format("Recall", n, recall_at_n[i]))
+
+    if allow_save:
+        np.save(data_path + name, all_recalls)
+    return all_recalls
+
+
+def invert_dMat(dMat):
+    '''
+    Inverts the scale of the given distance matrix
+    '''
+
+    max_dMat = np.max(dMat)
+    inverted_dMat = np.zeros_like(dMat)
+    
+    inverted_dMat = max_dMat - dMat
+    
+    return inverted_dMat 
+
                 
 
-def main():
+def main(args):
     
-    skip = 8 
-    offset_after_skip = 0
-    update_interval = 600 
-    epochs = 60
-    n_e = 400
-    folder_id = 'NRD'
-    num_train_imgs = 2 * 100
-    num_test_imgs = 100
-
-    first_epoch = (num_train_imgs * epochs)
-    last_epoch = (num_train_imgs * epochs) + 1 
-    use_weighted_assignments = True
     
-    ad_path_test = "_test"
-    ad_path = "_offset{}".format(offset_after_skip)
-    
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--skip', type=int, default=skip, help='The number of images to skip between each place label.')
-    parser.add_argument('--offset_after_skip', type=int, default=offset_after_skip, help='The offset to apply for selecting places after skipping every n images.')
-    parser.add_argument('--folder_id', type=str, default=folder_id, help='Folder name of dataset to be used.')
-    parser.add_argument('--num_train_imgs', type=int, default=num_train_imgs, help='Number of entire training images.')
-    parser.add_argument('--num_test_imgs', type=int, default=num_test_imgs, help='Number of entire testing images.')
-    parser.add_argument('--first_epoch', type=int, default=first_epoch, help='For use of neuronal assignments, the first training iteration number in saved outputs.')
-    parser.add_argument('--last_epoch', type=int, default=last_epoch, help='For use of neuronal assignments, the last training iteration number in saved outputs.')
-    parser.add_argument('--update_interval', type=int, default=update_interval, help='The number of iterations to save at one time in training output matrix.')
-    parser.add_argument('--epochs', type=int, default=epochs, help='Number of sweeps through the dataset in training.')
-    parser.add_argument('--use_weighted_assignments', type=bool, default=use_weighted_assignments, help='Value to define the type of neuronal assignment to use: standard=0, weighted=1')
-    parser.add_argument('--n_e', type=int, default=n_e, help='Number of excitatory output neurons. The number of inhibitory neurons are the same.')
-
-    parser.add_argument("--ad_path_test", type=str, default=ad_path_test, help='Additional string arguments for subfolder names to save testing outputs.')
-    parser.add_argument('--ad_path', type=str, default=ad_path, help='Additional string arguments for subfolder names to save outputs.')
-    parser.add_argument('--multi_path', type=str, default='epoch{}'.format(epochs), help='Additional string arguments for subfolder names to save evaluation outputs.')
-    parser.set_defaults()
-
-    args = parser.parse_args()
-
-    data_path = './outputs/outputs_ne{}_L{}'.format(args.n_e, args.num_test_imgs) + args.ad_path + '/' 
-    path_id = 'L{}_S{}_O{}'.format(args.num_test_imgs, args.skip, args.offset_after_skip)
+    data_path = './outputs/outputs_ne{}_L{}'.format(args.n_e, args.num_labels) + args.ad_path + '/' 
+    path_id = 'L{}_S{}_O{}'.format(args.num_labels, args.skip, args.offset_after_skip)
 
     main_folder_path = data_path 
     Path(main_folder_path).mkdir(parents=True, exist_ok=True)
@@ -383,6 +420,7 @@ def main():
     num_training_sweeps = args.epochs 
     n_e = args.n_e
     use_weighted_assignments = args.use_weighted_assignments    
+    
 
     result_type = "weighted/" if use_weighted_assignments else "standard/"  
     data_path += result_type
@@ -421,57 +459,60 @@ def main():
     else:
         training_result_monitors = training_result_monitor
         
-    if os.path.isfile(main_folder_path + 'inputNumbers' + training_ending + ending): 
-        training_input_numbers = np.load(main_folder_path + 'inputNumbers' + training_ending + ending)
-    else:
-        training_input_numbers = np.array( 2 * num_training_sweeps * list(range(num_testing_imgs)) ) 
+    training_input_numbers = np.load(main_folder_path + 'inputNumbers' + training_ending + ending)
 
 
     testing_result_monitor = np.load(main_folder_path + 'resultPopVecs' + testing_ending + args.ad_path_test + ending)     
     testing_input_numbers = np.load(main_folder_path + 'inputNumbers' + testing_ending + args.ad_path_test + ending)
 
-    unique_test_labels = np.unique(testing_input_numbers)
-    num_unique_test_labels = len(unique_test_labels)
 
-    test_results = np.zeros((num_unique_test_labels, num_testing_imgs))
-    summed_rates = np.zeros((num_unique_test_labels, num_testing_imgs))
-    rates_matrix = np.zeros((num_unique_test_labels, num_testing_imgs))
 
     print('Assignments')
-    assignments = get_new_assignments(training_result_monitor, training_input_numbers[0:training_result_monitor.shape[0]], num_unique_test_labels, n_e) 
+    assignments = get_new_assignments(training_result_monitor, training_input_numbers[0:training_result_monitor.shape[0]], n_e) 
     all_assignments = [{} for _ in range(n_e)]
 
     if use_weighted_assignments: 
-        assignments, all_assignments = get_new_assignments_weighted(training_result_monitor, training_input_numbers[0:training_result_monitor.shape[0]], num_unique_test_labels, n_e) 
+        assignments, all_assignments = get_new_assignments_weighted(training_result_monitor, training_input_numbers[0:training_result_monitor.shape[0]], n_e) 
     
     if use_weighted_assignments and multiple_UI_assignments: 
-        assignments, all_assignments = get_new_assignments_weighted(training_result_monitors, training_input_numbers[0:training_result_monitors.shape[0]], num_unique_test_labels, n_e) 
+        assignments, all_assignments = get_new_assignments_weighted(training_result_monitors, training_input_numbers[0:training_result_monitors.shape[0]], n_e) 
 
+    np.save(main_folder_path + "assignments_" + path_id, assignments)
+    np.save(main_folder_path + "all_assignments_" + path_id, all_assignments)
+    
     unique_assignments = np.unique(assignments)
+    num_unique_assignments = len(unique_assignments) 
 
     print("Neuron Assignments ( shape = {} ): \n{}".format( assignments.shape, assignments) )
     print("Unique labels learnt ( count: {} ): \n{}".format( len(unique_assignments), unique_assignments ) ) 
 
-    norm_summed_rates = np.zeros((num_unique_test_labels, num_testing_imgs)) 
-    P_i = np.zeros((num_unique_test_labels, num_testing_imgs))    
+    norm_summed_rates = np.zeros((num_unique_assignments, num_testing_imgs)) 
+    P_i = np.zeros((num_unique_assignments, num_testing_imgs))    
 
+    test_results = np.zeros((num_unique_assignments, num_testing_imgs))
+    summed_rates = np.zeros((num_unique_assignments, num_testing_imgs))
+    
+    sum_train_spikes_list, train_spikes_list, learnt_neurons_list, len_learnt_labels_list = get_training_neuronal_spikes(unique_assignments, use_weighted_assignments, all_assignments)
+    
     for i in range(num_testing_imgs):
-        test_results[:,i], summed_rates[:,i] = get_recognized_number_ranking(assignments, testing_result_monitor[i,:], num_unique_test_labels, use_weighted_assignments, all_assignments)
+        test_results[:,i], summed_rates[:,i] = get_recognized_number_ranking(assignments, testing_result_monitor[i,:], unique_assignments, sum_train_spikes_list, train_spikes_list, learnt_neurons_list, len_learnt_labels_list, use_weighted_assignments)
 
         # Probability-based neuronal assignment 
         norm_summed_rates[:,i] = (summed_rates[:,i] - np.min(summed_rates[:,i]) ) / ( np.max(summed_rates[:,i]) - np.min(summed_rates[:,i]) )
         P_i[:, i] = norm_summed_rates[:,i] / np.sum(norm_summed_rates[:,i])
 
-    difference = test_results[0,:] - testing_input_numbers[0:test_results.shape[0]]
+    np.save(data_path + "summed_rates_" + path_id, summed_rates)
+    
+    difference = test_results[0, args.offset_after_skip : args.offset_after_skip+args.num_labels] - testing_input_numbers[args.offset_after_skip : args.offset_after_skip+args.num_labels]
     
     print("Testing input numbers: \n", testing_input_numbers)
     print("Testing result: \n", test_results[0,:])
-    print( "\nDifferences: \n{}\nSummed rates (shape = {} ): \n{}".format(difference, summed_rates.shape, summed_rates) )
+    print( "\nDifferences: \n{}".format(difference) )
 
     difference = abs(difference)
     correct, incorrect, accurracy = get_accuracy(difference, tolerance=0)
     print( "\nAccuracy: {}, num correct: {}, num incorrect: {}".format(accurracy, len(correct), len(incorrect)) )
-    print("Correctly predicted labels: \n{}\nIncorrectly predicted labels: \n{}\n".format(correct, incorrect))
+    print("Correctly predicted label indices: \n{}\nIncorrectly predicted label indices: \n{}\n".format(correct, incorrect))
     
 
     # Binary distance matrix 
@@ -482,18 +523,23 @@ def main():
     compute_distance_matrix(summed_rates, data_path, "spike_rates_distMatrix")
 
     # Distance matrix where 0 represents closest 
-    max_rate = (max(map(max, summed_rates)))
-    max_P_i = (max(map(max, P_i)))
-
-    rates_matrix_P_i = np.zeros((num_unique_test_labels, num_testing_imgs))
+    rates_matrix = invert_dMat(summed_rates)
+    rates_matrix_P_i = invert_dMat(P_i)
+    
+    sorted_pred_idx = np.argsort(rates_matrix, axis=0)
+    
+    # compute recall at N - use num_labels to only compute the R@N at module level 
+    n_values = [1, 5, 10, 15, 20, 25]
+    numQ = args.num_labels
+    gt = np.arange(len(summed_rates))
+    compute_recall(gt, sorted_pred_idx[:, args.offset_after_skip : args.offset_after_skip+args.num_labels], numQ, n_values, data_path, name="recallAtN_SNN")
 
     plot_name = "DM_{}_{}".format(folder_id, path_id)
-    for i in range(num_testing_imgs):
-        rates_matrix[:, i] = [max_rate - l for l in summed_rates[:, i] ]
-        rates_matrix_P_i[:, i] = [max_P_i - l for l in P_i[:, i] ]
-
     compute_distance_matrix(rates_matrix, data_path, plot_name)
     compute_distance_matrix(rates_matrix_P_i, data_path, plot_name + "_Pi")
+    
+    if summed_rates.shape[0] != summed_rates.shape[1]:
+        return
 
     fig_name = "PR_{}_{}".format(folder_id, path_id)
     plot_name = "Weighted" if use_weighted_assignments else "Standard" 
@@ -508,7 +554,45 @@ def main():
 
 
 if __name__ == "__main__":
+    
+    
+    skip = 8 
+    offset_after_skip = 0
+    update_interval = 50 
+    epochs = 20
+    n_e = 100
+    folder_id = 'NRD'
+    num_train_imgs = 2 * 5
+    num_test_imgs = 5
 
-    main()
+    first_epoch = (num_train_imgs * epochs)
+    last_epoch = (num_train_imgs * epochs) + 1 
+    use_weighted_assignments = False
+    
+    ad_path_test = "_test"
+    ad_path = "_offset{}".format(offset_after_skip)
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--skip', type=int, default=skip, help='The number of images to skip between each place label.')
+    parser.add_argument('--offset_after_skip', type=int, default=offset_after_skip, help='The offset to apply for selecting places after skipping every n images.')
+    parser.add_argument('--folder_id', type=str, default=folder_id, help='Folder name of dataset to be used.')
+    parser.add_argument('--num_train_imgs', type=int, default=num_train_imgs, help='Number of entire training images.')
+    parser.add_argument('--num_test_imgs', type=int, default=num_test_imgs, help='Number of entire testing images.')
+    parser.add_argument('--first_epoch', type=int, default=first_epoch, help='For use of neuronal assignments, the first training iteration number in saved outputs.')
+    parser.add_argument('--last_epoch', type=int, default=last_epoch, help='For use of neuronal assignments, the last training iteration number in saved outputs.')
+    parser.add_argument('--update_interval', type=int, default=update_interval, help='The number of iterations to save at one time in training output matrix.')
+    parser.add_argument('--epochs', type=int, default=epochs, help='Number of sweeps through the dataset in training.')
+    parser.add_argument('--use_weighted_assignments', type=bool, default=use_weighted_assignments, help='Value to define the type of neuronal assignment to use: standard=0, weighted=1')
+    parser.add_argument('--n_e', type=int, default=n_e, help='Number of excitatory output neurons. The number of inhibitory neurons are the same.')
+
+    parser.add_argument("--ad_path_test", type=str, default=ad_path_test, help='Additional string arguments for subfolder names to save testing outputs.')
+    parser.add_argument('--ad_path', type=str, default=ad_path, help='Additional string arguments for subfolder names to save outputs.')
+    parser.add_argument('--multi_path', type=str, default='epoch{}'.format(epochs), help='Additional string arguments for subfolder names to save evaluation outputs.')
+    parser.set_defaults()
+
+    args = parser.parse_args()
+    
+
+    main(args)
             
     

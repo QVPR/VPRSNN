@@ -7,6 +7,9 @@ __pycache__/
 *.so
 
 # outputs
+*.png
+*.npy
+*.sh
 *.log
 *.jpg 
 *.o

@@ -153,7 +153,7 @@ def processImageDataset(path, type, imWidth, imHeight, num_patches=7, num_labels
             frame = processImage(frame, imWidth, imHeight, num_patches)  
             frames.append(frame)
 
-            labels.append(ii)
+            labels.append(ii+offset_after_skip)
 
             if nordland: 
                 idx = np.where(np.array(filtered_index) == i)[0][0]
