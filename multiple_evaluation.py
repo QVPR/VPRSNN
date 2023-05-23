@@ -14,17 +14,23 @@ def main(args):
     
     args.ad_path = args.ad_path.format(args.offset_after_skip, args.tc_gi) 
     
+    num_test_labels_base = args.num_test_labels
+    offset_after_skip_base = args.offset_after_skip
     
     if args.mode == "test":
         
-        args.ad_path_test = "_test_E{}".format(args.epochs)
-        snn_model_main(args)
-        
-        args.first_epoch = (args.num_train_imgs*args.epochs)
-        args.last_epoch = (args.num_train_imgs*args.epochs) + 1       
-        args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)  
-        
-        module_evaluation_main(args)
+        if offset_after_skip_base >= args.num_cal_labels: 
+            
+            args.ad_path_test = "_test_E{}".format(args.epochs)
+            args.num_test_labels = num_test_labels_base
+            args.offset_after_skip = args.num_cal_labels
+            snn_model_main(args)
+            
+            args.first_epoch = (args.num_train_imgs*args.epochs)
+            args.last_epoch = (args.num_train_imgs*args.epochs) + 1       
+            args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)  
+            args.offset_after_skip = offset_after_skip_base
+            module_evaluation_main(args)
         
     
     else: 
@@ -35,27 +41,31 @@ def main(args):
         # Run the python script - train        
         args.mode = "train"
         args.ad_path_test = ""
+        args.offset_after_skip = offset_after_skip_base
         snn_model_main(args)
 
 
         # Run the python script - record 
         args.mode = "record"
         args.ad_path_test = ""
+        args.num_test_labels = args.num_cal_labels + num_test_labels_base
+        args.offset_after_skip = 0
         snn_model_main(args)
         
                 
-        # test all query data at the same time - separate cal and test during merging modules 
-        # Run the python script - Calibrate and test 
-        args.mode = "calibrate"
-        args.ad_path_test = "_test_E{}".format(args.epochs)
-        snn_model_main(args)
-        
+        if offset_after_skip_base < args.num_cal_labels: 
 
-        args.first_epoch = (args.num_train_imgs*args.epochs)
-        args.last_epoch = (args.num_train_imgs*args.epochs) + 1       
-        args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)  
-        
-        module_evaluation_main(args)
+            # Run the python script - Calibrate
+            args.mode = "calibrate"
+            args.ad_path_test = "_test_E{}".format(args.epochs)
+            args.num_test_labels = args.num_cal_labels
+            args.offset_after_skip = 0
+            snn_model_main(args)
+            
+            args.first_epoch = (args.num_train_imgs*args.epochs)
+            args.last_epoch = (args.num_train_imgs*args.epochs) + 1       
+            args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)  
+            module_evaluation_main(args)
 
 
 

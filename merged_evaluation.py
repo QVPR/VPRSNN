@@ -154,12 +154,12 @@ def main(args):
 
     # compute recall at N
     n_values = [1, 5, 10, 15, 20, 25]
-    numQ = summed_rates.shape[0]
-    gt_labels = np.arange(summed_rates.shape[0])
+    numQ = test_labels.shape[0]
+    gt_labels = np.arange(test_labels.shape[0])
     recallAtN = compute_recall(gt_labels, sorted_pred_idx, numQ, n_values, data_path, name="recallAtN_SNN.npy")
     plot_recallAtN(data_path, n_values, recallAtN, "recallAtN_plot")
         
-    difference = test_results[0,:] - gt_labels[:len(test_results[0,:])]
+    difference = test_results[0,:] - test_labels
     tolerance = 0
     correct, incorrect, accurracy = get_accuracy(abs(difference), tolerance=tolerance)
     print( "\nTolerance: {}, accuracy: {}, num correct: {}, num incorrect: {}".format(tolerance, np.mean(accurracy), len(correct), len(incorrect)) )

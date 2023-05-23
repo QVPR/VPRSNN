@@ -318,30 +318,16 @@ def main(args):
 
     np.random.seed(0)
 
-    training_data = processImageDataset(train_data_path, "train", imWidth, imHeight, num_patches, args.num_labels, skip, args.offset_after_skip)
-
-    if args.mode == "record":
-        offset_after_skip = 0
-        num_labels = args.num_cal_labels + args.num_test_labels
+    if not test_mode:
+        training_data = processImageDataset(train_data_path, "train", imWidth, imHeight, num_patches, args.num_labels, skip, args.offset_after_skip)
+        print("\nTraining labels:\n{}\n".format(training_data['y'].flatten()))
     
-    if args.mode == "calibrate": 
-        offset_after_skip = 0
-        num_labels = args.num_cal_labels
-        
-    if args.mode == "test":
-        offset_after_skip = args.num_cal_labels
-        num_labels = args.num_test_labels
-    
-    testing_data = processImageDataset(test_data_path, "test", imWidth, imHeight, num_patches, num_labels=num_labels, skip=skip, offset_after_skip=offset_after_skip) 
+    else:
+        testing_data = processImageDataset(test_data_path, "test", imWidth, imHeight, num_patches, num_labels=args.num_test_labels, skip=skip, offset_after_skip=args.offset_after_skip) 
+        print("\nTesting labels:\n{}\n".format(testing_data['y'].flatten() ))
 
-    print("\nTraining labels:\n{}\n\nTesting labels:\n{}\n".format(training_data['y'].flatten(), testing_data['y'].flatten() ))
-
-    train_labels = np.unique(training_data['y'])
-    num_training_imgs = training_data['x'].shape[0]
-
-    test_labels = np.unique(testing_data['y'])
-    num_testing_imgs = testing_data['x'].shape[0]
-    np.save(outputsPath + 'test_labels.npy', test_labels)
+    num_training_imgs = len(train_data_path)*args.num_labels
+    num_testing_imgs = args.num_test_labels
 
 
     weight_path = weightsPath if test_mode else random_path
@@ -364,8 +350,7 @@ def main(args):
     snn_model = create_snn_model(weight_path, num_training_examples, args.n_e, n_i, n_input, population_name, Xe, Ae, test_mode=test_mode, use_monitors=use_monitors)
 
     # run the simulation 
-    labels = train_labels if not test_mode else test_labels
-    num_labels = len(labels)
+    num_labels = args.num_labels if not test_mode else args.num_test_labels
     
     figures = [1,2]
 
@@ -405,7 +390,7 @@ def main(args):
         snn_model.run_network(single_example_time)
 
         if j % update_interval == 0 and j > 0:
-            assignments = get_new_assignments(result_monitor[:], input_numbers[j-update_interval : j], num_labels, args.n_e)
+            assignments = get_new_assignments(result_monitor[:], input_numbers[j-update_interval : j], args.n_e)
 
             print("Unique labels learnt: \n", np.unique(assignments))
             np.save(outputsPath + "resultPopVecs" + str(j), result_monitor) 

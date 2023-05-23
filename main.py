@@ -23,6 +23,7 @@ def main(args):
     ad_path_base = args.ad_path
     ad_path_test_base = args.ad_path_test
     args_multi_path_base = args.multi_path
+    num_test_labels_base = args.num_test_labels
 
     if args.run_mode == 'wandb_hpc' or args.run_mode == 'wandb_local':
         sweep_config = setup_wandb_config(offset_after_skip_list, args)
@@ -30,7 +31,9 @@ def main(args):
         print("sweep id: ", sweep_id)
 
     for offset_after_skip in offset_after_skip_list:
+        
         args.offset_after_skip = offset_after_skip
+        args.num_test_labels = num_test_labels_base
         
         if args.run_mode == 'local':
             
@@ -144,7 +147,7 @@ if __name__ == "__main__":
     ad_path = "_offset{}"                
     multi_path = "epoch{}_T{}_T{}"
 
-    mode = "test" #  "train"
+    mode = "test" # "train" # "test" #  
     use_weighted_assignments = False
 
     run_mode = "local"

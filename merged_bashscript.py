@@ -35,6 +35,7 @@ def main(use_all_data=False):
     base_res = 1
 
     num_cal_labels = 5
+    num_test_labels = 15
 
     ad_path = '_offset{}'     
     multi_path = 'epoch{}_T{}_T{}'    
@@ -57,8 +58,9 @@ def main(use_all_data=False):
     parser.add_argument('--num_train_imgs', type=int, default=num_train_imgs, help='Number of entire training images.')
     parser.add_argument('--num_test_imgs', type=int, default=num_test_imgs, help='Number of entire testing images.')
     parser.add_argument('--org_num_test_imgs', type=int, default=org_num_test_imgs, help='Number of entire testing images for both cal and testing.')
-    parser.add_argument('--num_cal_labels', type=int, default=num_cal_labels, help="Number of images needed for calibration. Needed for shuffling input images.")
     parser.add_argument('--num_labels', type=int, default=num_labels, help='Number of distinct places to use from the dataset.')
+    parser.add_argument('--num_cal_labels', type=int, default=num_cal_labels, help="Number of images needed for calibration. Needed for shuffling input images.")
+    parser.add_argument('--num_test_labels', type=int, default=num_test_labels, help='Number of distinct places to use from the dataset for testing.')
     parser.add_argument('--use_weighted_assignments', type=bool, default=use_weighted_assignments, help='Value to define the type of neuronal assignment to use: standard=0, weighted=1')
     parser.add_argument('--base_res', type=int, default=base_res, help='The type of base results to use for hyperactive neuron detection.')
     parser.add_argument('--threshold_i', type=int, default=threshold_i, help='Threshold value to ignore hyperactive neurons.')

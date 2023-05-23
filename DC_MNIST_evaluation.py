@@ -413,7 +413,7 @@ def main(args):
 
     folder_id = args.folder_id 
     num_training_imgs = args.num_train_imgs 
-    num_testing_imgs = args.num_test_imgs    
+    num_testing_imgs = args.num_test_labels   
     first_epoch = args.first_epoch          
     last_epoch = args.last_epoch           
     update_interval = args.update_interval  
@@ -467,7 +467,6 @@ def main(args):
 
 
 
-    print('Assignments')
     assignments = get_new_assignments(training_result_monitor, training_input_numbers[0:training_result_monitor.shape[0]], n_e) 
     all_assignments = [{} for _ in range(n_e)]
 
@@ -483,7 +482,6 @@ def main(args):
     unique_assignments = np.unique(assignments)
     num_unique_assignments = len(unique_assignments) 
 
-    print("Neuron Assignments ( shape = {} ): \n{}".format( assignments.shape, assignments) )
     print("Unique labels learnt ( count: {} ): \n{}".format( len(unique_assignments), unique_assignments ) ) 
 
     norm_summed_rates = np.zeros((num_unique_assignments, num_testing_imgs)) 
@@ -503,7 +501,9 @@ def main(args):
 
     np.save(data_path + "summed_rates_" + path_id, summed_rates)
     
-    difference = test_results[0, args.offset_after_skip : args.offset_after_skip+args.num_labels] - testing_input_numbers[args.offset_after_skip : args.offset_after_skip+args.num_labels]
+    start_idx = max((args.offset_after_skip-args.num_cal_labels), 0)
+    end_idx = max((args.offset_after_skip-args.num_cal_labels)+args.num_labels, args.num_labels)
+    difference = test_results[0, start_idx : end_idx] - testing_input_numbers[start_idx : end_idx]
     
     print("Testing input numbers: \n", testing_input_numbers)
     print("Testing result: \n", test_results[0,:])
@@ -531,8 +531,8 @@ def main(args):
     # compute recall at N - use num_labels to only compute the R@N at module level 
     n_values = [1, 5, 10, 15, 20, 25]
     numQ = args.num_labels
-    gt = np.arange(len(summed_rates))
-    compute_recall(gt, sorted_pred_idx[:, args.offset_after_skip : args.offset_after_skip+args.num_labels], numQ, n_values, data_path, name="recallAtN_SNN")
+    gt = np.arange(args.num_labels)
+    compute_recall(gt, sorted_pred_idx[:, start_idx : end_idx], numQ, n_values, data_path, name="recallAtN_SNN")
 
     plot_name = "DM_{}_{}".format(folder_id, path_id)
     compute_distance_matrix(rates_matrix, data_path, plot_name)
