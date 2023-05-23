@@ -109,7 +109,7 @@ def processImageDataset(path, type, imWidth, imHeight, num_patches=7, num_labels
 
     if "nordland" in path[0]:
         dirPath = os.path.abspath(os.getcwd())
-        filtered_names_path = dirPath + "/nordland_imageNames.txt"
+        filtered_names_path = "{}/dataset_imagenames/nordland_imageNames.txt".format(dirPath)
         filtered_index = get_filtered_name_paths(filtered_names_path)
 
     frames = []

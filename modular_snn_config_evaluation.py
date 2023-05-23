@@ -11,7 +11,7 @@ import numpy as np
 import seaborn as sn
 
 
-from DC_MNIST_evaluation import (Logger, get_accuracy,
+from snn_model_evaluation import (get_accuracy,
                                     get_recognized_number_ranking, 
                                     get_training_neuronal_spikes,
                                     compute_recall, invert_dMat,
@@ -19,18 +19,9 @@ from DC_MNIST_evaluation import (Logger, get_accuracy,
                                     compute_distance_matrix, 
                                     plot_precision_recall)
 
+from logger import Logger
 
 matplotlib.rcParams['ps.fonttype'] = 42
-
-use_latex = False
-
-if use_latex:
-    plt.rcParams.update({"text.usetex": True, "font.family": "serif", "font.sans-serif": ["Helvetica"]})
-    custom_preamble = {
-        "text.latex.preamble": r"\usepackage{amsmath}",  # for the align, center,... environment
-    }
-    plt.rcParams.update(custom_preamble)
-
 
 
 

@@ -22,9 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-
-
-
 import argparse
 import math
 import os
@@ -36,11 +33,190 @@ import matplotlib.cm as cmap
 import matplotlib.pyplot as plt
 import numpy as np
 
-import plotting as pl
+from logger import Logger
+from data_utils import get_train_test_datapath, processImageDataset
 import snn_model_utils as model
-from DC_MNIST_evaluation import (Logger, get_new_assignments,
-                                 get_recognized_number_ranking)
-from snn_util import get_train_test_datapath, processImageDataset
+from snn_model_evaluation import get_new_assignments, get_recognized_number_ranking
+from snn_model_plot import plot_rateMonitors, plot_spikeMonitors, plot_spikeMonitorsCount
+
+
+
+
+def main(args):
+
+    weightsPath = './weights/weights_ne{}_L{}'.format(args.n_e, args.num_labels) + args.ad_path + '/'
+    outputsPath = './outputs/outputs_ne{}_L{}'.format(args.n_e, args.num_labels) + args.ad_path + '/'
+    random_path = './random/random_ne{}'.format(args.n_e) + args.ad_path + '/'
+
+    Path(weightsPath).mkdir(parents=True, exist_ok=True)
+    Path(outputsPath).mkdir(parents=True, exist_ok=True)
+    
+    modes = {
+        "train": "logfile_train",
+        "record": "logfile_record",
+        "calibrate": "logfile_calibrate",
+        "test": "logfile_test",
+    }
+    
+    test_mode, logfile_name = set_mode(args.mode, modes)
+    sys.stdout = Logger(outputsPath, logfile_name)
+    print(args)
+
+    org_data_path = ['./../data/{}/'.format(args.dataset)]  
+
+    train_data_path, test_data_path = get_train_test_datapath(org_data_path)
+
+    ad_path_test = args.ad_path_test if test_mode else ""
+    skip = args.skip
+    num_labels = args.num_labels
+    n_i = args.n_e
+
+    use_monitors = False 
+    repeat_no_spikes = False 
+
+
+    # Set img width and height, also regenerate random initialised weights when img shape changes 
+    imWidth = 28   
+    imHeight = 28   
+    num_patches = 7
+    min_num_spikes = 1
+
+    np.random.seed(0)
+
+    if not test_mode:
+        training_data = processImageDataset(train_data_path, "train", imWidth, imHeight, num_patches, args.num_labels, skip, args.offset_after_skip)
+        print("\nTraining labels:\n{}\n".format(training_data['y'].flatten()))
+    
+    else:
+        testing_data = processImageDataset(test_data_path, "test", imWidth, imHeight, num_patches, num_labels=args.num_test_labels, skip=skip, offset_after_skip=args.offset_after_skip) 
+        print("\nTesting labels:\n{}\n".format(testing_data['y'].flatten() ))
+
+    num_training_imgs = len(train_data_path)*args.num_labels
+    num_testing_imgs = args.num_test_labels
+
+
+    weight_path = weightsPath if test_mode else random_path
+    num_examples = num_testing_imgs if test_mode else num_training_imgs * args.epochs            
+    update_interval = num_examples if test_mode else args.update_interval
+    num_training_examples =  num_training_imgs * args.epochs
+    do_plot_performance = True    
+
+    initial_resting_time = 0.5 * b2.second
+    single_example_time = 0.35 * b2.second
+    resting_time = 0.15 * b2.second
+    n_input = imWidth * imHeight             
+
+    Xe = 'Xe'
+    population_name = 'A'
+    Ae = 'Ae'
+
+    # create snn model 
+    print("Create model")
+    snn_model = create_snn_model(weight_path, num_training_examples, args.n_e, n_i, n_input, population_name, Xe, Ae, test_mode=test_mode, use_monitors=use_monitors)
+
+    # run the simulation 
+    num_labels = args.num_labels if not test_mode else args.num_test_labels
+    
+    figures = [1,2]
+
+    if not test_mode:
+        plot_2d_input_weights(snn_model.connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1], tag="1")
+        
+    if do_plot_performance:
+        performance = plot_initial_performance(num_examples, update_interval, outputsPath, figures[0])
+
+    snn_model.input_groups[Xe].rates = 0 * b2.Hz
+    snn_model.run_network(initial_resting_time)
+
+    input_intensity = args.intensity 
+    start_input_intensity = input_intensity
+
+    previous_spike_count = np.zeros(args.n_e)
+    assignments = np.zeros(args.n_e)
+    input_numbers = np.zeros(num_examples)
+    outputNumbers = np.zeros((num_examples, num_labels))
+    result_monitor = np.zeros((update_interval,args.n_e))
+    previous_spike_count = np.copy(snn_model.spike_monitors[Ae].count[:])
+
+    j = 0
+    kkk = 0 
+
+    for j in range(int(num_examples)):
+
+        if test_mode:
+            spike_rates = testing_data['x'][j%num_testing_imgs,:,:].reshape((n_input)) / input_intensity                  
+        else:
+            normalize_weights(snn_model.connections, args.n_e)
+            spike_rates = training_data['x'][j%num_training_imgs,:,:].reshape((n_input)) / input_intensity              
+        
+        snn_model.input_groups[Xe].rates = spike_rates * b2.Hz
+
+        print('run number:', j+1, 'of', int(num_examples))
+        snn_model.run_network(single_example_time)
+
+        if j % update_interval == 0 and j > 0:
+            assignments = get_new_assignments(result_monitor[:], input_numbers[j-update_interval : j], args.n_e)
+
+            print("Unique labels learnt: \n", np.unique(assignments))
+            np.save(outputsPath + "resultPopVecs" + str(j), result_monitor) 
+
+            if not test_mode:                
+                plot_2d_input_weights(snn_model.connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1])                
+                save_connections(snn_model, weightsPath, str(j), save_all=False)
+                save_theta(snn_model.neuron_groups[Ae].theta, weightsPath, population_name, str(j))
+
+        current_spike_count = np.asarray(snn_model.spike_monitors[Ae].count[:]) - previous_spike_count
+        previous_spike_count = np.copy(snn_model.spike_monitors[Ae].count[:])
+
+        if repeat_no_spikes and np.sum(current_spike_count) < min_num_spikes and kkk == 0:
+            input_intensity += 1
+            snn_model.input_groups[Xe].rates = 0 * b2.Hz        
+            snn_model.run_network(resting_time)
+            kkk += 1 
+
+        else:
+            kkk = 0
+            result_monitor[j%update_interval,:] = current_spike_count
+            input_numbers[j] = testing_data['y'][j%num_testing_imgs][0] if test_mode else training_data['y'][j%num_training_imgs][0]
+
+            outputNumbers[j,:], summed_rates = get_recognized_number_ranking(assignments, result_monitor[j%update_interval,:], np.arange(args.offset_after_skip, args.offset_after_skip+num_labels))
+
+            if j % update_interval == 0 and j > 0 and do_plot_performance: 
+                performance = plot_performance(performance, j, update_interval, outputNumbers, input_numbers, outputsPath, figures[0])
+                
+                print("Classification performance at {}: \n{}".format(j, performance[:int((j/float(update_interval))+1)] ) )      
+
+            snn_model.input_groups[Xe].rates = 0 * b2.Hz
+            snn_model.run_network(resting_time)
+            input_intensity = start_input_intensity
+            j += 1
+                
+    
+    b2.device.delete(code=False)
+
+    print('output numbers: \n', outputNumbers, '\nSummed rates: \n', summed_rates)
+
+    print('save results')
+    if not test_mode:
+        save_theta(snn_model.neuron_groups[Ae].theta, weightsPath, population_name, str(num_examples), use_initial_name=True)
+        save_connections(snn_model, weightsPath, str(num_examples), use_initial_name=True)
+
+    np.save(outputsPath + "resultPopVecs" + str(num_examples) + ad_path_test, result_monitor)
+    np.save(outputsPath + "inputNumbers" + str(num_examples) + ad_path_test, input_numbers)
+
+
+    # plot results
+    plot_2d_input_weights(snn_model.connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1], tag="3")
+
+    if snn_model.rate_monitors:
+        plot_rateMonitors(snn_model.rate_monitors, outputsPath, args.epochs, test_mode)
+
+    if snn_model.spike_monitors:
+        plot_spikeMonitors(snn_model.spike_monitors, outputsPath, args.epochs, test_mode)
+        plot_spikeMonitorsCount(snn_model.spike_monitors, outputsPath)
+
+    print('done')
+    
 
 
 def save_connections(snn_model, weightsPath, interval = '', save_all=True, use_initial_name=False):
@@ -262,15 +438,10 @@ def create_snn_model(weight_path, num_training_examples, n_e, n_i, n_input, popu
 
 
 
-modes = {
-    "train": "logfile_train",
-    "record": "logfile_record",
-    "calibrate": "logfile_calibrate",
-    "test": "logfile_test",
-}
 
 
-def set_mode(mode):
+
+def set_mode(mode, modes):
     
     if mode in modes:
         test_mode = True if mode != "train" else False
@@ -282,177 +453,7 @@ def set_mode(mode):
     
 
 
-def main(args):
 
-
-
-    weightsPath = './weights/weights_ne{}_L{}'.format(args.n_e, args.num_labels) + args.ad_path + '/'
-    outputsPath = './outputs/outputs_ne{}_L{}'.format(args.n_e, args.num_labels) + args.ad_path + '/'
-    random_path = './random/random_ne{}'.format(args.n_e) + args.ad_path + '/'
-
-    Path(weightsPath).mkdir(parents=True, exist_ok=True)
-    Path(outputsPath).mkdir(parents=True, exist_ok=True)
-
-    test_mode, logfile_name = set_mode(args.mode)
-    sys.stdout = Logger(outputsPath, logfile_name)
-    print(args)
-
-    org_data_path = ['./../data/{}/'.format(args.dataset)]  
-
-    train_data_path, test_data_path = get_train_test_datapath(org_data_path)
-
-    ad_path_test = args.ad_path_test if test_mode else ""
-    skip = args.skip
-    num_labels = args.num_labels
-    n_i = args.n_e
-
-    use_monitors = False 
-    repeat_no_spikes = False 
-
-
-    # Set img width and height, also regenerate random initialised weights when img shape changes 
-    imWidth = 28   
-    imHeight = 28   
-    num_patches = 7
-    min_num_spikes = 1
-
-    np.random.seed(0)
-
-    if not test_mode:
-        training_data = processImageDataset(train_data_path, "train", imWidth, imHeight, num_patches, args.num_labels, skip, args.offset_after_skip)
-        print("\nTraining labels:\n{}\n".format(training_data['y'].flatten()))
-    
-    else:
-        testing_data = processImageDataset(test_data_path, "test", imWidth, imHeight, num_patches, num_labels=args.num_test_labels, skip=skip, offset_after_skip=args.offset_after_skip) 
-        print("\nTesting labels:\n{}\n".format(testing_data['y'].flatten() ))
-
-    num_training_imgs = len(train_data_path)*args.num_labels
-    num_testing_imgs = args.num_test_labels
-
-
-    weight_path = weightsPath if test_mode else random_path
-    num_examples = num_testing_imgs if test_mode else num_training_imgs * args.epochs            
-    update_interval = num_examples if test_mode else args.update_interval
-    num_training_examples =  num_training_imgs * args.epochs
-    do_plot_performance = True    
-
-    initial_resting_time = 0.5 * b2.second
-    single_example_time = 0.35 * b2.second
-    resting_time = 0.15 * b2.second
-    n_input = imWidth * imHeight             
-
-    Xe = 'Xe'
-    population_name = 'A'
-    Ae = 'Ae'
-
-    # create snn model 
-    print("Create model")
-    snn_model = create_snn_model(weight_path, num_training_examples, args.n_e, n_i, n_input, population_name, Xe, Ae, test_mode=test_mode, use_monitors=use_monitors)
-
-    # run the simulation 
-    num_labels = args.num_labels if not test_mode else args.num_test_labels
-    
-    figures = [1,2]
-
-    if not test_mode:
-        plot_2d_input_weights(snn_model.connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1], tag="1")
-        
-    if do_plot_performance:
-        performance = plot_initial_performance(num_examples, update_interval, outputsPath, figures[0])
-
-    snn_model.input_groups[Xe].rates = 0 * b2.Hz
-    snn_model.run_network(initial_resting_time)
-
-    input_intensity = args.intensity 
-    start_input_intensity = input_intensity
-
-    previous_spike_count = np.zeros(args.n_e)
-    assignments = np.zeros(args.n_e)
-    input_numbers = np.zeros(num_examples)
-    outputNumbers = np.zeros((num_examples, num_labels))
-    result_monitor = np.zeros((update_interval,args.n_e))
-    previous_spike_count = np.copy(snn_model.spike_monitors[Ae].count[:])
-
-    j = 0
-    kkk = 0 
-
-    for j in range(int(num_examples)):
-
-        if test_mode:
-            spike_rates = testing_data['x'][j%num_testing_imgs,:,:].reshape((n_input)) / input_intensity                  
-        else:
-            normalize_weights(snn_model.connections, args.n_e)
-            spike_rates = training_data['x'][j%num_training_imgs,:,:].reshape((n_input)) / input_intensity              
-        
-        snn_model.input_groups[Xe].rates = spike_rates * b2.Hz
-
-        print('run number:', j+1, 'of', int(num_examples))
-        snn_model.run_network(single_example_time)
-
-        if j % update_interval == 0 and j > 0:
-            assignments = get_new_assignments(result_monitor[:], input_numbers[j-update_interval : j], args.n_e)
-
-            print("Unique labels learnt: \n", np.unique(assignments))
-            np.save(outputsPath + "resultPopVecs" + str(j), result_monitor) 
-
-            if not test_mode:                
-                plot_2d_input_weights(snn_model.connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1])                
-                save_connections(snn_model, weightsPath, str(j), save_all=False)
-                save_theta(snn_model.neuron_groups[Ae].theta, weightsPath, population_name, str(j))
-
-        current_spike_count = np.asarray(snn_model.spike_monitors[Ae].count[:]) - previous_spike_count
-        previous_spike_count = np.copy(snn_model.spike_monitors[Ae].count[:])
-
-        if repeat_no_spikes and np.sum(current_spike_count) < min_num_spikes and kkk == 0:
-            input_intensity += 1
-            snn_model.input_groups[Xe].rates = 0 * b2.Hz        
-            snn_model.run_network(resting_time)
-            kkk += 1 
-
-        else:
-            kkk = 0
-            result_monitor[j%update_interval,:] = current_spike_count
-            input_numbers[j] = testing_data['y'][j%num_testing_imgs][0] if test_mode else training_data['y'][j%num_training_imgs][0]
-
-            outputNumbers[j,:], summed_rates = get_recognized_number_ranking(assignments, result_monitor[j%update_interval,:], np.arange(args.offset_after_skip, args.offset_after_skip+num_labels))
-
-            if j % update_interval == 0 and j > 0 and do_plot_performance: 
-                performance = plot_performance(performance, j, update_interval, outputNumbers, input_numbers, outputsPath, figures[0])
-                
-                print("Classification performance at {}: \n{}".format(j, performance[:int((j/float(update_interval))+1)] ) )      
-
-            snn_model.input_groups[Xe].rates = 0 * b2.Hz
-            snn_model.run_network(resting_time)
-            input_intensity = start_input_intensity
-            j += 1
-                
-    
-    b2.device.delete(code=False)
-
-    print('output numbers: \n', outputNumbers, '\nSummed rates: \n', summed_rates)
-
-
-    # save results
-    print('save results')
-    if not test_mode:
-        save_theta(snn_model.neuron_groups[Ae].theta, weightsPath, population_name, str(num_examples), use_initial_name=True)
-        save_connections(snn_model, weightsPath, str(num_examples), use_initial_name=True)
-
-    np.save(outputsPath + "resultPopVecs" + str(num_examples) + ad_path_test, result_monitor)
-    np.save(outputsPath + "inputNumbers" + str(num_examples) + ad_path_test, input_numbers)
-
-
-    # plot results
-    plot_2d_input_weights(snn_model.connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1], tag="3")
-
-    if snn_model.rate_monitors:
-        pl.plot_rateMonitors(snn_model.rate_monitors, outputsPath, args.epochs, test_mode)
-
-    if snn_model.spike_monitors:
-        pl.plot_spikeMonitors(snn_model.spike_monitors, outputsPath, args.epochs, test_mode)
-        pl.plot_spikeMonitorsCount(snn_model.spike_monitors, outputsPath)
-
-    print('done')
     
 
 

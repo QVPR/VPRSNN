@@ -36,24 +36,160 @@ import numpy as np
 import seaborn as sn
 from sklearn.metrics import auc
 
+from logger import Logger
 
-class Logger(object):
-    '''
-    Class to save the terminal output into a file
-    '''
-    def __init__(self, outputsPath, logfile_name):
-        self.terminal = sys.stdout
-        self.log = open(outputsPath + "{}.log".format(logfile_name), "w")
 
-    def write(self, message):
-        self.terminal.write(message)
-        self.log.write(message)  
 
-    def flush(self):
-        #this flush method is needed for python 3 compatibility.
-        #this handles the flush command by doing nothing.
-        #you might want to specify some extra behavior here.
-        pass 
+
+def main(args):
+    
+    
+    data_path = './outputs/outputs_ne{}_L{}'.format(args.n_e, args.num_labels) + args.ad_path + '/' 
+    path_id = 'L{}_S{}_O{}'.format(args.num_labels, args.skip, args.offset_after_skip)
+
+    main_folder_path = data_path 
+    Path(main_folder_path).mkdir(parents=True, exist_ok=True)
+
+    folder_id = args.folder_id 
+    num_training_imgs = args.num_train_imgs 
+    num_testing_imgs = args.num_test_labels   
+    first_epoch = args.first_epoch          
+    last_epoch = args.last_epoch           
+    update_interval = args.update_interval  
+    num_training_sweeps = args.epochs 
+    n_e = args.n_e
+    use_weighted_assignments = args.use_weighted_assignments    
+    
+
+    result_type = "weighted/" if use_weighted_assignments else "standard/"  
+    data_path += result_type
+    Path(data_path).mkdir(parents=True, exist_ok=True)
+
+    multiple_UI_assignments = use_weighted_assignments
+ 
+    if args.multi_path != "": 
+        data_path += args.multi_path + "/"
+
+    Path(data_path).mkdir(parents=True, exist_ok=True)
+    sys.stdout = Logger(data_path, logfile_name="logfile_evaluation")
+    print(args)
+    ending = '.npy'
+
+    training_ending = str( int(num_training_imgs * num_training_sweeps )) 
+    testing_ending = str(num_testing_imgs )  
+
+    training_result_monitor = np.load(main_folder_path + 'resultPopVecs' + training_ending + ending)
+    epoch_list = np.arange(first_epoch, last_epoch, update_interval) 
+
+    if multiple_UI_assignments:
+        for x in epoch_list:
+        
+            if not os.path.isfile(data_path + 'resultPopVecs' + str(int(x)) + ending):
+                if x == epoch_list[-1]:
+                    training_result_monitors = training_result_monitor
+                continue
+            training_result_monitors_i = np.load(data_path + 'resultPopVecs' + str(int(x)) + ending)
+
+            if x == epoch_list[0]:
+                training_result_monitors = training_result_monitors_i
+            else:
+                training_result_monitors = np.append(training_result_monitors, training_result_monitors_i, axis=0)
+                print("training result shape: ", training_result_monitors.shape )
+    else:
+        training_result_monitors = training_result_monitor
+        
+    training_input_numbers = np.load(main_folder_path + 'inputNumbers' + training_ending + ending)
+
+
+    testing_result_monitor = np.load(main_folder_path + 'resultPopVecs' + testing_ending + args.ad_path_test + ending)     
+    testing_input_numbers = np.load(main_folder_path + 'inputNumbers' + testing_ending + args.ad_path_test + ending)
+
+
+
+    assignments = get_new_assignments(training_result_monitor, training_input_numbers[0:training_result_monitor.shape[0]], n_e) 
+    all_assignments = [{} for _ in range(n_e)]
+
+    if use_weighted_assignments: 
+        assignments, all_assignments = get_new_assignments_weighted(training_result_monitor, training_input_numbers[0:training_result_monitor.shape[0]], n_e) 
+    
+    if use_weighted_assignments and multiple_UI_assignments: 
+        assignments, all_assignments = get_new_assignments_weighted(training_result_monitors, training_input_numbers[0:training_result_monitors.shape[0]], n_e) 
+
+    np.save(main_folder_path + "assignments_" + path_id, assignments)
+    np.save(main_folder_path + "all_assignments_" + path_id, all_assignments)
+    
+    unique_assignments = np.unique(assignments)
+    num_unique_assignments = len(unique_assignments) 
+
+    print("Unique labels learnt ( count: {} ): \n{}".format( len(unique_assignments), unique_assignments ) ) 
+
+    norm_summed_rates = np.zeros((num_unique_assignments, num_testing_imgs)) 
+    P_i = np.zeros((num_unique_assignments, num_testing_imgs))    
+
+    test_results = np.zeros((num_unique_assignments, num_testing_imgs))
+    summed_rates = np.zeros((num_unique_assignments, num_testing_imgs))
+    
+    sum_train_spikes_list, train_spikes_list, learnt_neurons_list, len_learnt_labels_list = get_training_neuronal_spikes(unique_assignments, use_weighted_assignments, all_assignments)
+    
+    for i in range(num_testing_imgs):
+        test_results[:,i], summed_rates[:,i] = get_recognized_number_ranking(assignments, testing_result_monitor[i,:], unique_assignments, sum_train_spikes_list, train_spikes_list, learnt_neurons_list, len_learnt_labels_list, use_weighted_assignments)
+
+        # Probability-based neuronal assignment 
+        norm_summed_rates[:,i] = (summed_rates[:,i] - np.min(summed_rates[:,i]) ) / ( np.max(summed_rates[:,i]) - np.min(summed_rates[:,i]) )
+        P_i[:, i] = norm_summed_rates[:,i] / np.sum(norm_summed_rates[:,i])
+
+    np.save(data_path + "summed_rates_" + path_id, summed_rates)
+    
+    start_idx = max((args.offset_after_skip-args.num_cal_labels), 0)
+    end_idx = max((args.offset_after_skip-args.num_cal_labels)+args.num_labels, args.num_labels)
+    difference = test_results[0, start_idx : end_idx] - testing_input_numbers[start_idx : end_idx]
+    
+    print("Testing input numbers: \n", testing_input_numbers)
+    print("Testing result: \n", test_results[0,:])
+    print( "\nDifferences: \n{}".format(difference) )
+
+    difference = abs(difference)
+    correct, incorrect, accurracy = get_accuracy(difference, tolerance=0)
+    print( "\nAccuracy: {}, num correct: {}, num incorrect: {}".format(accurracy, len(correct), len(incorrect)) )
+    print("Correctly predicted label indices: \n{}\nIncorrectly predicted label indices: \n{}\n".format(correct, incorrect))
+    
+
+    # Binary distance matrix 
+    dMat = compute_binary_distance_matrix(summed_rates) 
+    compute_distance_matrix(dMat, data_path, "binary_distMatrix")
+
+    # Distance matrix where 0 represents furthest 
+    compute_distance_matrix(summed_rates, data_path, "spike_rates_distMatrix")
+
+    # Distance matrix where 0 represents closest 
+    rates_matrix = invert_dMat(summed_rates)
+    rates_matrix_P_i = invert_dMat(P_i)
+    
+    sorted_pred_idx = np.argsort(rates_matrix, axis=0)
+    
+    # compute recall at N - use num_labels to only compute the R@N at module level 
+    n_values = [1, 5, 10, 15, 20, 25]
+    numQ = args.num_labels
+    gt = np.arange(args.num_labels)
+    compute_recall(gt, sorted_pred_idx[:, start_idx : end_idx], numQ, n_values, data_path, name="recallAtN_SNN")
+
+    plot_name = "DM_{}_{}".format(folder_id, path_id)
+    compute_distance_matrix(rates_matrix, data_path, plot_name)
+    compute_distance_matrix(rates_matrix_P_i, data_path, plot_name + "_Pi")
+    
+    if summed_rates.shape[0] != summed_rates.shape[1]:
+        return
+
+    fig_name = "PR_{}_{}".format(folder_id, path_id)
+    plot_name = "Weighted" if use_weighted_assignments else "Standard" 
+    print("Results based on {} assignments: ".format(plot_name))
+    plot_precision_recall(rates_matrix, data_path, fig_name, "{}".format(plot_name))
+            
+    print("Results based on {} probability-based assignments: ".format(plot_name))
+    plot_precision_recall(rates_matrix_P_i, data_path, fig_name + "_Pi", "{} Probability-based".format(plot_name))
+
+    print('done')
+    
     
 
 
@@ -402,154 +538,8 @@ def invert_dMat(dMat):
 
                 
 
-def main(args):
+
     
-    
-    data_path = './outputs/outputs_ne{}_L{}'.format(args.n_e, args.num_labels) + args.ad_path + '/' 
-    path_id = 'L{}_S{}_O{}'.format(args.num_labels, args.skip, args.offset_after_skip)
-
-    main_folder_path = data_path 
-    Path(main_folder_path).mkdir(parents=True, exist_ok=True)
-
-    folder_id = args.folder_id 
-    num_training_imgs = args.num_train_imgs 
-    num_testing_imgs = args.num_test_labels   
-    first_epoch = args.first_epoch          
-    last_epoch = args.last_epoch           
-    update_interval = args.update_interval  
-    num_training_sweeps = args.epochs 
-    n_e = args.n_e
-    use_weighted_assignments = args.use_weighted_assignments    
-    
-
-    result_type = "weighted/" if use_weighted_assignments else "standard/"  
-    data_path += result_type
-    Path(data_path).mkdir(parents=True, exist_ok=True)
-
-    multiple_UI_assignments = use_weighted_assignments
- 
-    if args.multi_path != "": 
-        data_path += args.multi_path + "/"
-
-    Path(data_path).mkdir(parents=True, exist_ok=True)
-    sys.stdout = Logger(data_path, logfile_name="logfile_evaluation")
-    print(args)
-    ending = '.npy'
-
-    training_ending = str( int(num_training_imgs * num_training_sweeps )) 
-    testing_ending = str(num_testing_imgs )  
-
-    training_result_monitor = np.load(main_folder_path + 'resultPopVecs' + training_ending + ending)
-    epoch_list = np.arange(first_epoch, last_epoch, update_interval) 
-
-    if multiple_UI_assignments:
-        for x in epoch_list:
-        
-            if not os.path.isfile(data_path + 'resultPopVecs' + str(int(x)) + ending):
-                if x == epoch_list[-1]:
-                    training_result_monitors = training_result_monitor
-                continue
-            training_result_monitors_i = np.load(data_path + 'resultPopVecs' + str(int(x)) + ending)
-
-            if x == epoch_list[0]:
-                training_result_monitors = training_result_monitors_i
-            else:
-                training_result_monitors = np.append(training_result_monitors, training_result_monitors_i, axis=0)
-                print("training result shape: ", training_result_monitors.shape )
-    else:
-        training_result_monitors = training_result_monitor
-        
-    training_input_numbers = np.load(main_folder_path + 'inputNumbers' + training_ending + ending)
-
-
-    testing_result_monitor = np.load(main_folder_path + 'resultPopVecs' + testing_ending + args.ad_path_test + ending)     
-    testing_input_numbers = np.load(main_folder_path + 'inputNumbers' + testing_ending + args.ad_path_test + ending)
-
-
-
-    assignments = get_new_assignments(training_result_monitor, training_input_numbers[0:training_result_monitor.shape[0]], n_e) 
-    all_assignments = [{} for _ in range(n_e)]
-
-    if use_weighted_assignments: 
-        assignments, all_assignments = get_new_assignments_weighted(training_result_monitor, training_input_numbers[0:training_result_monitor.shape[0]], n_e) 
-    
-    if use_weighted_assignments and multiple_UI_assignments: 
-        assignments, all_assignments = get_new_assignments_weighted(training_result_monitors, training_input_numbers[0:training_result_monitors.shape[0]], n_e) 
-
-    np.save(main_folder_path + "assignments_" + path_id, assignments)
-    np.save(main_folder_path + "all_assignments_" + path_id, all_assignments)
-    
-    unique_assignments = np.unique(assignments)
-    num_unique_assignments = len(unique_assignments) 
-
-    print("Unique labels learnt ( count: {} ): \n{}".format( len(unique_assignments), unique_assignments ) ) 
-
-    norm_summed_rates = np.zeros((num_unique_assignments, num_testing_imgs)) 
-    P_i = np.zeros((num_unique_assignments, num_testing_imgs))    
-
-    test_results = np.zeros((num_unique_assignments, num_testing_imgs))
-    summed_rates = np.zeros((num_unique_assignments, num_testing_imgs))
-    
-    sum_train_spikes_list, train_spikes_list, learnt_neurons_list, len_learnt_labels_list = get_training_neuronal_spikes(unique_assignments, use_weighted_assignments, all_assignments)
-    
-    for i in range(num_testing_imgs):
-        test_results[:,i], summed_rates[:,i] = get_recognized_number_ranking(assignments, testing_result_monitor[i,:], unique_assignments, sum_train_spikes_list, train_spikes_list, learnt_neurons_list, len_learnt_labels_list, use_weighted_assignments)
-
-        # Probability-based neuronal assignment 
-        norm_summed_rates[:,i] = (summed_rates[:,i] - np.min(summed_rates[:,i]) ) / ( np.max(summed_rates[:,i]) - np.min(summed_rates[:,i]) )
-        P_i[:, i] = norm_summed_rates[:,i] / np.sum(norm_summed_rates[:,i])
-
-    np.save(data_path + "summed_rates_" + path_id, summed_rates)
-    
-    start_idx = max((args.offset_after_skip-args.num_cal_labels), 0)
-    end_idx = max((args.offset_after_skip-args.num_cal_labels)+args.num_labels, args.num_labels)
-    difference = test_results[0, start_idx : end_idx] - testing_input_numbers[start_idx : end_idx]
-    
-    print("Testing input numbers: \n", testing_input_numbers)
-    print("Testing result: \n", test_results[0,:])
-    print( "\nDifferences: \n{}".format(difference) )
-
-    difference = abs(difference)
-    correct, incorrect, accurracy = get_accuracy(difference, tolerance=0)
-    print( "\nAccuracy: {}, num correct: {}, num incorrect: {}".format(accurracy, len(correct), len(incorrect)) )
-    print("Correctly predicted label indices: \n{}\nIncorrectly predicted label indices: \n{}\n".format(correct, incorrect))
-    
-
-    # Binary distance matrix 
-    dMat = compute_binary_distance_matrix(summed_rates) 
-    compute_distance_matrix(dMat, data_path, "binary_distMatrix")
-
-    # Distance matrix where 0 represents furthest 
-    compute_distance_matrix(summed_rates, data_path, "spike_rates_distMatrix")
-
-    # Distance matrix where 0 represents closest 
-    rates_matrix = invert_dMat(summed_rates)
-    rates_matrix_P_i = invert_dMat(P_i)
-    
-    sorted_pred_idx = np.argsort(rates_matrix, axis=0)
-    
-    # compute recall at N - use num_labels to only compute the R@N at module level 
-    n_values = [1, 5, 10, 15, 20, 25]
-    numQ = args.num_labels
-    gt = np.arange(args.num_labels)
-    compute_recall(gt, sorted_pred_idx[:, start_idx : end_idx], numQ, n_values, data_path, name="recallAtN_SNN")
-
-    plot_name = "DM_{}_{}".format(folder_id, path_id)
-    compute_distance_matrix(rates_matrix, data_path, plot_name)
-    compute_distance_matrix(rates_matrix_P_i, data_path, plot_name + "_Pi")
-    
-    if summed_rates.shape[0] != summed_rates.shape[1]:
-        return
-
-    fig_name = "PR_{}_{}".format(folder_id, path_id)
-    plot_name = "Weighted" if use_weighted_assignments else "Standard" 
-    print("Results based on {} assignments: ".format(plot_name))
-    plot_precision_recall(rates_matrix, data_path, fig_name, "{}".format(plot_name))
-            
-    print("Results based on {} probability-based assignments: ".format(plot_name))
-    plot_precision_recall(rates_matrix_P_i, data_path, fig_name + "_Pi", "{} Probability-based".format(plot_name))
-
-    print('done')
 
 
 

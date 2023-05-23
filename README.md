@@ -81,15 +81,15 @@ conda activate vprsnn
 2. Nordland datasets, which can be downloaded from: https://webdiis.unizar.es/~jmfacil/pr-nordland/#download-dataset (If not already available)
 
 ### Training a new network:
-1. Generate the initial synaptic weights using DC_MNIST_random_conn_generator.py, modify the number of output neurons if required. 
+1. Generate the initial synaptic weights using random_connection_generator.py, modify the number of output neurons if required. 
 2. Modify the training configurations on main file "snn_model.py" including changing "args.test_mode" to "False" (if needed) and run the code. 
 3. The trained weights will be stored in a subfolder in the folder "weights", which can be used to test the performance.
 4. The output will be stored in a subfolder in the folder "outputs", which also contains log files. 
 
 ### Testing with pretrained weights
 1. To test your trained model, set "args.test_mode" to "True", and run snn_model.py file. The trained weights for a model with 100 places (current configuration across all files) is provided in a subfolder in weights folder.  
-2. Run the "WeightReadout.py" to visualise the learnt weights. 
-3. Run "DC_MNIST_evaluation.py" to do the neuronal assignments and perform the predictions. 
+2. Run the "weight_visualisations.py" to visualise the learnt weights. 
+3. Run "snn_model_evaluation.py" to do the neuronal assignments and perform the predictions. 
 4. The output will be stored in the same subfolder as in the training folder "outputs", which also contains log files. 
 
 

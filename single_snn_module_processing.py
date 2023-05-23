@@ -1,10 +1,35 @@
 #! /usr/bin/env python
+
+'''
+MIT License
+
+Copyright (c) 2022 Somayeh Hussaini, Michael Milford and Tobias Fischer
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+'''
+
 import argparse
 import numpy as np
 
-from DC_MNIST_evaluation import main as module_evaluation_main
-from DC_MNIST_random_conn_generator import main as conn_generator_main
+from random_connection_generator import main as generate_random_connections
 from snn_model import main as snn_model_main
+from snn_model_evaluation import main as evaluate_snn_module
 
 
 
@@ -30,12 +55,12 @@ def main(args):
             args.last_epoch = (args.num_train_imgs*args.epochs) + 1       
             args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)  
             args.offset_after_skip = offset_after_skip_base
-            module_evaluation_main(args)
+            evaluate_snn_module(args)
         
     
     else: 
         # update the initial random values of connections 
-        conn_generator_main(args)
+        generate_random_connections(args)
         
         
         # Run the python script - train        
@@ -65,7 +90,7 @@ def main(args):
             args.first_epoch = (args.num_train_imgs*args.epochs)
             args.last_epoch = (args.num_train_imgs*args.epochs) + 1       
             args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)  
-            module_evaluation_main(args)
+            evaluate_snn_module(args)
 
 
 
