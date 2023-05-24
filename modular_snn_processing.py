@@ -27,7 +27,7 @@ SOFTWARE.
 import argparse
 import wandb
 
-from wandb_utils import create_hpc_bashscript_wandb, get_wandb_sweep_id, setup_wandb_config
+from tools.wandb_utils import create_hpc_bashscript_wandb, get_wandb_sweep_id, setup_wandb_config
 
 
 
@@ -98,22 +98,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
     parser.add_argument('--dataset', type=str, default="nordland", 
-                        help='Folder name of dataset to be used. Relative to this repo, the folder must exist in this directory: ./../data/')
+                        help='Dataset folder name that is relative to this repo. The folder must exist in this directory: ./../data/')
     parser.add_argument('--num_labels', type=int, default=5, 
-                        help='Number of place labels used for training a module.')
+                        help='Number of training place labels for a single module.')
+    parser.add_argument('--num_cal_labels', type=int, default=5, 
+                        help="Number of calibration place labels.")
     parser.add_argument('--num_test_labels', type=int, default=15, 
-                        help='Number of place labels used for testing all modules.')
+                        help='Number of testing place labels.')
     parser.add_argument('--tc_ge', type=float, default=1.0, 
                         help='Time constant of conductance of excitatory synapses AeAi')
     parser.add_argument('--tc_gi', type=float, default=0.5, 
                         help='Time constant of conductance of inhibitory synapses AiAe')
     parser.add_argument('--intensity', type=int, default=4, 
                         help="Intensity scaling factor to change the range of input pixel values")
-    parser.add_argument('--num_cal_labels', type=int, default=5, 
-                        help="Number of place labels used for calibration.")
-    
-    parser.add_argument('--mode', type=str, default="test", #"train", 
-                        help='String indicator to define the mode (train, record, calibrate, test).')
     parser.add_argument('--use_weighted_assignments', type=bool, default=False, 
                         help='Value to define the type of neuronal assignment to use: standard=False, weighted=True')
 
@@ -145,6 +142,8 @@ if __name__ == "__main__":
     parser.add_argument('--ad_path', type=str, default="_offset{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}")   
     
+    parser.add_argument('--mode', type=str, default="test",  # "test", #"train", 
+                        help='String indicator to define the mode (train, record, calibrate, test).')
     parser.add_argument('--run_mode', type=str, default="local", 
                         help='Mode to run the modular network.')
     parser.add_argument('--sweep_name', type=str, default="sweep_1", 

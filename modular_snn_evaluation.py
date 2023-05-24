@@ -39,11 +39,8 @@ def main(args, use_all_data=False):
             args.num_test_imgs = args_num_test_imgs_base
             args.offset_after_skip = 0
             args.multi_path = args_multi_path_base.format(args.epochs, args.num_test_imgs, args.threshold_i)
-            args.test_mode = True
             
             evaluate_modular_snn_config(args)
-        
-            args.test_mode = False 
             
             
         else: 
@@ -58,13 +55,9 @@ def main(args, use_all_data=False):
             args.num_test_imgs = args_num_test_imgs_base  
             args.offset_after_skip = args_offset_after_skip_base
             args.multi_path = args_multi_path_base.format(args.epochs, args.org_num_test_imgs, args.threshold_i)
-            args.test_mode = True
             
             evaluate_modular_snn_config(args)
             time.sleep(1)
-            
-            args.test_mode = False 
-
             
 
 
@@ -76,60 +69,42 @@ def main(args, use_all_data=False):
 if __name__ == "__main__":
     
     
-    skip = 8 
-    n_e = 100        
-
-    epochs = 20
-    folder_id = 'NRD_SFS'
-    dataset = "nordland"
-
-    num_labels = 5
-    num_train_imgs = num_labels * 2 if folder_id == 'NRD_SFS' or folder_id == 'ORC' else num_labels
-
-
-    offset_after_skip = 5
-    num_test_imgs = 15          
-    org_num_test_imgs = num_test_imgs
-    base_res = 1
-
-    num_cal_labels = 5
-    num_test_labels = 15
-
-    ad_path = '_offset{}'     
-    multi_path = 'epoch{}_T{}_T{}'    
-
-    use_weighted_assignments = False
-    tc_gi = 0.5
-    threshold_i = 0
-    seed = 0
-
-
     parser = argparse.ArgumentParser()
+    
+    parser.add_argument('--dataset', type=str, default="nordland", 
+                        help='Dataset folder name that is relative to this repo. The folder must exist in this directory: ./../data/')
+    parser.add_argument('--num_labels', type=int, default=5, 
+                        help='Number of training place labels for a single module.')
+    parser.add_argument('--num_cal_labels', type=int, default=5, 
+                        help="Number of calibration place labels.")
+    parser.add_argument('--num_test_labels', type=int, default=15, 
+                        help='Number of testing place labels.')   
+    parser.add_argument('--use_weighted_assignments', type=bool, default=False, 
+                        help='Value to define the type of neuronal assignment to use: standard=False, weighted=True') 
 
-    parser.add_argument('--dataset', type=str, default=dataset, help='Folder name of dataset to be used. Relative to this repo, the folder must exist in this directory: ./../data/')
-    parser.add_argument('--skip', type=int, default=skip, help='The number of images to skip between each place label.')
-    parser.add_argument('--offset_after_skip', type=int, default=offset_after_skip, help='The offset to apply for selecting places after skipping every n images.')
-    parser.add_argument('--epochs', type=int, default=epochs, help='Number of passes through the dataset.')
-    parser.add_argument('--n_e', type=int, default=n_e, help='Number of excitatory output neurons. The number of inhibitory neurons are the same.')
-
-    parser.add_argument('--folder_id', type=str, default=folder_id, help='Folder name of dataset to be used.')
-    parser.add_argument('--num_train_imgs', type=int, default=num_train_imgs, help='Number of entire training images.')
-    parser.add_argument('--num_test_imgs', type=int, default=num_test_imgs, help='Number of entire testing images.')
-    parser.add_argument('--org_num_test_imgs', type=int, default=org_num_test_imgs, help='Number of entire testing images for both cal and testing.')
-    parser.add_argument('--num_labels', type=int, default=num_labels, help='Number of distinct places to use from the dataset.')
-    parser.add_argument('--num_cal_labels', type=int, default=num_cal_labels, help="Number of images needed for calibration. Needed for shuffling input images.")
-    parser.add_argument('--num_test_labels', type=int, default=num_test_labels, help='Number of distinct places to use from the dataset for testing.')
-    parser.add_argument('--use_weighted_assignments', type=bool, default=use_weighted_assignments, help='Value to define the type of neuronal assignment to use: standard=0, weighted=1')
-    parser.add_argument('--base_res', type=int, default=base_res, help='The type of base results to use for hyperactive neuron detection.')
-    parser.add_argument('--threshold_i', type=int, default=threshold_i, help='Threshold value to ignore hyperactive neurons.')
-    parser.add_argument('--tc_gi', type=float, default=tc_gi, help='Time constant of conductance of inhibitory synapses AiAe')
-    parser.add_argument('--seed', type=int, default=seed, help='Set seed for random generator.')
-            
-    parser.add_argument('--val_mode', dest="val_mode", action="store_true", help='Boolean indicator to switch to validation mode.')
-    parser.add_argument('--test_mode', dest="test_mode", action="store_true", help='Boolean indicator to switch between training and testing mode.')
-
-    parser.add_argument('--ad_path', type=str, default=ad_path)
-    parser.add_argument('--multi_path', type=str, default=multi_path)
+    parser.add_argument('--skip', type=int, default=8, 
+                        help='The number of images to skip between each place label.')
+    parser.add_argument('--offset_after_skip', type=int, default=5, 
+                        help='The offset to apply for selecting places after skipping every n images.')
+    parser.add_argument('--folder_id', type=str, default="NRD_SFS", 
+                        help='Id to distinguish the traverses used from the dataset.')
+    parser.add_argument('--num_train_imgs', type=int, default=10, 
+                        help='Number of entire training images.')
+    parser.add_argument('--num_test_imgs', type=int, default=15, 
+                        help='Number of entire testing images.')
+    parser.add_argument('--org_num_test_imgs', type=int, default=20, 
+                        help='Number of entire testing images and calibration images.')
+    
+    parser.add_argument('--epochs', type=int, default=20, 
+                        help='Number of passes through the dataset.')
+    parser.add_argument('--n_e', type=int, default=100, 
+                        help='Number of excitatory output neurons. The number of inhibitory neurons are defined the same.')
+    parser.add_argument('--threshold_i', type=int, default=0, 
+                        help='Threshold value used to ignore the hyperactive neurons.')
+    
+    parser.add_argument('--ad_path', type=str, default="_offset{}")             
+    parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}")   
+        
 
     parser.set_defaults()
     args = parser.parse_args()

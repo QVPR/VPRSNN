@@ -36,7 +36,7 @@ import numpy as np
 import seaborn as sn
 from sklearn.metrics import auc
 
-from logger import Logger
+from tools.logger import Logger
 
 
 
@@ -546,38 +546,39 @@ def invert_dMat(dMat):
 if __name__ == "__main__":
     
     
-    skip = 8 
-    offset_after_skip = 0
-    update_interval = 50 
-    epochs = 20
-    n_e = 100
-    folder_id = 'NRD'
-    num_train_imgs = 2 * 5
-    num_test_imgs = 5
-
-    first_epoch = (num_train_imgs * epochs)
-    last_epoch = (num_train_imgs * epochs) + 1 
-    use_weighted_assignments = False
-    
-    ad_path_test = "_test"
-    ad_path = "_offset{}".format(offset_after_skip)
-    
     parser = argparse.ArgumentParser()
-    parser.add_argument('--skip', type=int, default=skip, help='The number of images to skip between each place label.')
-    parser.add_argument('--offset_after_skip', type=int, default=offset_after_skip, help='The offset to apply for selecting places after skipping every n images.')
-    parser.add_argument('--folder_id', type=str, default=folder_id, help='Folder name of dataset to be used.')
-    parser.add_argument('--num_train_imgs', type=int, default=num_train_imgs, help='Number of entire training images.')
-    parser.add_argument('--num_test_imgs', type=int, default=num_test_imgs, help='Number of entire testing images.')
-    parser.add_argument('--first_epoch', type=int, default=first_epoch, help='For use of neuronal assignments, the first training iteration number in saved outputs.')
-    parser.add_argument('--last_epoch', type=int, default=last_epoch, help='For use of neuronal assignments, the last training iteration number in saved outputs.')
-    parser.add_argument('--update_interval', type=int, default=update_interval, help='The number of iterations to save at one time in training output matrix.')
-    parser.add_argument('--epochs', type=int, default=epochs, help='Number of sweeps through the dataset in training.')
-    parser.add_argument('--use_weighted_assignments', type=bool, default=use_weighted_assignments, help='Value to define the type of neuronal assignment to use: standard=0, weighted=1')
-    parser.add_argument('--n_e', type=int, default=n_e, help='Number of excitatory output neurons. The number of inhibitory neurons are the same.')
+    
+    parser.add_argument('--use_weighted_assignments', type=bool, default=False, 
+                        help='Value to define the type of neuronal assignment to use: standard=False, weighted=True')
 
-    parser.add_argument("--ad_path_test", type=str, default=ad_path_test, help='Additional string arguments for subfolder names to save testing outputs.')
-    parser.add_argument('--ad_path', type=str, default=ad_path, help='Additional string arguments for subfolder names to save outputs.')
-    parser.add_argument('--multi_path', type=str, default='epoch{}'.format(epochs), help='Additional string arguments for subfolder names to save evaluation outputs.')
+    parser.add_argument('--skip', type=int, default=8, 
+                        help='The number of images to skip between each place label.')
+    parser.add_argument('--offset_after_skip', type=int, default=0, 
+                        help='The offset to apply for selecting places after skipping every n images.')
+    parser.add_argument('--folder_id', type=str, default="NRD_SFS", 
+                        help='Id to distinguish the traverses used from the dataset.')
+    parser.add_argument('--num_train_imgs', type=int, default=10, 
+                        help='Number of entire training images.')
+    parser.add_argument('--num_test_imgs', type=int, default=15, 
+                        help='Number of entire testing images.')
+    parser.add_argument('--first_epoch', type=int, default=200, 
+                        help='For use of neuronal assignments, the first training iteration number in saved items.')
+    parser.add_argument('--last_epoch', type=int, default=201, 
+                        help='For use of neuronal assignments, the last training iteration number in saved items.')
+    parser.add_argument('--update_interval', type=int, default=50, 
+                        help='The number of iterations to save at one time in output matrix.')
+    parser.add_argument('--epochs', type=int, default=20, 
+                        help='Number of passes through the dataset.')
+    parser.add_argument('--n_e', type=int, default=100, 
+                        help='Number of excitatory output neurons. The number of inhibitory neurons are defined the same.')
+    parser.add_argument('--threshold_i', type=int, default=0, 
+                        help='Threshold value used to ignore the hyperactive neurons.')
+
+    parser.add_argument('--ad_path_test', type=str, default="_test_E{}", 
+                        help='Additional string arguments to use for saving test outputs in testing')
+    parser.add_argument('--ad_path', type=str, default="_offset{}")             
+    parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}")   
+    
     parser.set_defaults()
 
     args = parser.parse_args()
