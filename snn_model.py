@@ -1,7 +1,7 @@
 '''
 MIT License
 
-Copyright (c) 2022 Somayeh Hussaini, Michael Milford and Tobias Fischer
+Copyright (c) 2023 Somayeh Hussaini, Michael Milford and Tobias Fischer
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -490,7 +490,7 @@ if __name__ == "__main__":
                         help='Additional string arguments to use for saving test outputs in testing')
     parser.add_argument('--ad_path', type=str, default="_offset{}".format(0))
     
-    parser.add_argument('--mode', type=str, default="test", #"train", 
+    parser.add_argument('--mode', type=str, choices=["train", "test"], default="train", 
                         help='String indicator to define the mode (train, record, calibrate, test).')
 
     parser.set_defaults()

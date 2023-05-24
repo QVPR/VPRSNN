@@ -118,6 +118,9 @@ def main(args):
     neuron_spikes = np.count_nonzero(validation_result_monitor, axis=0)        
     testing_result_monitor_all = ignore_hyperactive_neurons(neuron_spikes, testing_result_monitor_all, args.threshold_i)
 
+    if np.all(testing_result_monitor_all == 0):
+        print("All neurons are categorised as hyperactive with a threshold of {} spikes (based on their responses to the reference data). Exiting...".format(args.threshold_i))
+        return
         
     if not use_precomputed:        
             

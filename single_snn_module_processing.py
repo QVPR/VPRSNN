@@ -3,7 +3,7 @@
 '''
 MIT License
 
-Copyright (c) 2022 Somayeh Hussaini, Michael Milford and Tobias Fischer
+Copyright (c) 2023 Somayeh Hussaini, Michael Milford and Tobias Fischer
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -49,12 +49,14 @@ def main(args):
             args.ad_path_test = "_test_E{}".format(args.epochs)
             args.num_test_labels = num_test_labels_base
             args.offset_after_skip = args.num_cal_labels
+            
             snn_model_main(args)
             
             args.first_epoch = (args.num_train_imgs*args.epochs)
             args.last_epoch = (args.num_train_imgs*args.epochs) + 1       
             args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)  
             args.offset_after_skip = offset_after_skip_base
+            
             evaluate_snn_module(args)
         
     
@@ -67,6 +69,7 @@ def main(args):
         args.mode = "train"
         args.ad_path_test = ""
         args.offset_after_skip = offset_after_skip_base
+        
         snn_model_main(args)
 
 
@@ -75,6 +78,7 @@ def main(args):
         args.ad_path_test = ""
         args.num_test_labels = args.num_cal_labels + num_test_labels_base
         args.offset_after_skip = 0
+        
         snn_model_main(args)
         
                 
@@ -85,11 +89,13 @@ def main(args):
             args.ad_path_test = "_test_E{}".format(args.epochs)
             args.num_test_labels = args.num_cal_labels
             args.offset_after_skip = 0
+            
             snn_model_main(args)
             
             args.first_epoch = (args.num_train_imgs*args.epochs)
             args.last_epoch = (args.num_train_imgs*args.epochs) + 1       
             args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)  
+            
             evaluate_snn_module(args)
 
 
@@ -141,7 +147,7 @@ if __name__ == "__main__":
     parser.add_argument('--ad_path', type=str, default="_offset{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}") 
 
-    parser.add_argument('--mode', type=str, default="test", #"train", 
+    parser.add_argument('--mode', type=str, choices=["train", "test"], default="train", 
                         help='String indicator to define the mode (train, record, calibrate, test).')
 
     parser.set_defaults()

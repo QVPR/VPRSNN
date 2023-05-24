@@ -49,7 +49,6 @@ def main(args, use_all_data=False):
             args.multi_path = args_multi_path_base.format(args.epochs, args.org_num_test_imgs, args.threshold_i)
             
             evaluate_modular_snn_config(args)
-            time.sleep(1)
 
 
             args.num_test_imgs = args_num_test_imgs_base  
@@ -57,7 +56,6 @@ def main(args, use_all_data=False):
             args.multi_path = args_multi_path_base.format(args.epochs, args.org_num_test_imgs, args.threshold_i)
             
             evaluate_modular_snn_config(args)
-            time.sleep(1)
             
 
 
