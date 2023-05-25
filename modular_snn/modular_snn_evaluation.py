@@ -1,71 +1,74 @@
 #! /usr/bin/env python
+
+'''
+MIT License
+
+Copyright (c) 2023 Somayeh Hussaini, Michael Milford and Tobias Fischer
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+'''
+
 import argparse
-import os
-import time
 
-
-from modular_snn_config_evaluation import main as evaluate_modular_snn_config
+from modular_snn.modular_snn_config_evaluation import main as evaluate_modular_snn_config
 
 
 '''
-
-python3 modular_snn_evaluation.py --num_test_imgs=100 --num_labels=25 --folder_id='NRD_SFS' --offset_after_skip=600 --skip=8 --multi_path='epoch{}_T{}_T{}' 
-python3 modular_snn_evaluation.py --num_test_imgs=2700 --num_labels=25 --folder_id='NRD_SFS' --offset_after_skip=600 --skip=8 --multi_path='epoch{}_T{}_T{}' 
-
+python3 modular_snn/modular_snn_evaluation.py --num_test_labels=100 --num_labels=25 --folder_id='NRD_SFS' --offset_after_skip=600 --skip=8 --multi_path='epoch{}_T{}_T{}' 
+python3 modular_snn/modular_snn_evaluation.py --num_test_labels=2700 --num_labels=25 --folder_id='NRD_SFS' --offset_after_skip=600 --skip=8 --multi_path='epoch{}_T{}_T{}' 
 
 '''
 
 
-
-
-def main(args, use_all_data=False):
+def main(args):
     
-
-    args.num_train_imgs = args.num_labels * 2 if args.folder_id == 'NRD_SFS' or args.folder_id == 'NRD_SFW' or args.folder_id == 'ORC' else args.num_labels
-    args.org_num_test_imgs = args.num_test_imgs + args.num_cal_labels
+    args.num_query_imgs = args.num_test_labels + args.num_cal_labels
 
     threshold_i_list = [0, 5, 10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200]   
 
     args_multi_path_base = args.multi_path
-    args_num_test_imgs_base = args.num_test_imgs
+    args_num_test_labels_base = args.num_test_labels
     args_offset_after_skip_base = args.offset_after_skip
 
 
     for threshold_i in threshold_i_list:
 
         args.threshold_i = threshold_i
+        args.multi_path = args_multi_path_base.format(args.epochs, args.num_query_imgs, args.threshold_i)
+
+        if args.mode == "calibrate": 
+            
+            args.num_test_labels = args.num_cal_labels 
+            args.offset_after_skip = 0
+            evaluate_modular_snn_config(args)
         
-        if use_all_data: 
-            args.num_test_imgs = args_num_test_imgs_base
-            args.offset_after_skip = 0
-            args.multi_path = args_multi_path_base.format(args.epochs, args.num_test_imgs, args.threshold_i)
+        
+        elif args.mode == "test":
             
-            evaluate_modular_snn_config(args)
-            
-            
-        else: 
-            args.num_test_imgs = args.num_cal_labels 
-            args.offset_after_skip = 0
-            args.multi_path = args_multi_path_base.format(args.epochs, args.org_num_test_imgs, args.threshold_i)
-            
-            evaluate_modular_snn_config(args)
-
-
-            args.num_test_imgs = args_num_test_imgs_base  
+            args.num_test_labels = args_num_test_labels_base  
             args.offset_after_skip = args_offset_after_skip_base
-            args.multi_path = args_multi_path_base.format(args.epochs, args.org_num_test_imgs, args.threshold_i)
-            
             evaluate_modular_snn_config(args)
             
-
-
-
-
 
 
 
 if __name__ == "__main__":
-    
     
     parser = argparse.ArgumentParser()
     
@@ -86,12 +89,8 @@ if __name__ == "__main__":
                         help='The offset to apply for selecting places after skipping every n images.')
     parser.add_argument('--folder_id', type=str, default="NRD_SFS", 
                         help='Id to distinguish the traverses used from the dataset.')
-    parser.add_argument('--num_train_imgs', type=int, default=10, 
-                        help='Number of entire training images.')
-    parser.add_argument('--num_test_imgs', type=int, default=15, 
-                        help='Number of entire testing images.')
-    parser.add_argument('--org_num_test_imgs', type=int, default=20, 
-                        help='Number of entire testing images and calibration images.')
+    parser.add_argument('--num_query_imgs', type=int, default=20, 
+                        help='Number of query images used for testing and calibration.')
     
     parser.add_argument('--epochs', type=int, default=20, 
                         help='Number of passes through the dataset.')
@@ -99,6 +98,9 @@ if __name__ == "__main__":
                         help='Number of excitatory output neurons. The number of inhibitory neurons are defined the same.')
     parser.add_argument('--threshold_i', type=int, default=0, 
                         help='Threshold value used to ignore the hyperactive neurons.')
+    
+    parser.add_argument('--mode', type=str, choices=["calibrate", "test"], default="train", 
+                        help='String indicator to define the mode (calibrate, test).')
     
     parser.add_argument('--ad_path', type=str, default="_offset{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}")   

@@ -29,7 +29,7 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 
-from snn_model import get_2d_input_weights
+from non_modular_snn.snn_model import get_2d_input_weights
 
 
 def plot_2d_input_weights(chosenCmap, weight_matrix, n_input, n_e, outputsPath):

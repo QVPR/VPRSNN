@@ -2,7 +2,7 @@ name: vprsnn
 channels:
   - conda-forge
 dependencies:
-  - python==3.7.9
+  - python
   - numpy
   - matplotlib
   - pathlib
@@ -17,5 +17,6 @@ dependencies:
   - autopep8
   - pandas
   - seaborn
+  - wandb
 
 

@@ -27,8 +27,8 @@ SOFTWARE.
 import argparse
 
 from snn_model_tools.random_connection_generator import main as generate_random_connections
-from snn_model import main as snn_model_main
-from snn_model_tools.snn_model_evaluation import main as evaluate_snn_module
+from non_modular_snn.snn_model import main as snn_model_main
+from non_modular_snn.snn_model_evaluation import main as evaluate_snn_module
 
 
 
@@ -39,23 +39,17 @@ def main(args):
     if args.mode == "test":
             
         args.ad_path_test = "_test_E{}".format(args.epochs)
-        
         snn_model_main(args)
-        
-        args.first_epoch = (args.num_train_imgs*args.epochs)
-        args.last_epoch = (args.num_train_imgs*args.epochs) + 1       
+            
         args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)  
-        
         evaluate_snn_module(args)
     
-    
-    else: 
+    elif args.mode == "train": 
         # update the initial random values of connections 
         generate_random_connections(args)
         
         # Run the python script - train
         args.ad_path_test = ""
-        
         snn_model_main(args)
 
 
@@ -87,14 +81,6 @@ if __name__ == "__main__":
                         help='The offset to apply for selecting places after skipping every n images.')
     parser.add_argument('--folder_id', type=str, default="NRD_SFS", 
                         help='Id to distinguish the traverses used from the dataset.')
-    parser.add_argument('--num_train_imgs', type=int, default=10, 
-                        help='Number of entire training images.')
-    parser.add_argument('--num_test_imgs', type=int, default=5, 
-                        help='Number of entire testing images.')
-    parser.add_argument('--first_epoch', type=int, default=200, 
-                        help='For use of neuronal assignments, the first training iteration number in saved items.')
-    parser.add_argument('--last_epoch', type=int, default=201, 
-                        help='For use of neuronal assignments, the last training iteration number in saved items.')
     parser.add_argument('--update_interval', type=int, default=50, 
                         help='The number of iterations to save at one time in output matrix.')
     parser.add_argument('--epochs', type=int, default=20, 
@@ -110,7 +96,7 @@ if __name__ == "__main__":
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}") 
 
     parser.add_argument('--mode', type=str, choices=["train", "test"], default="test", 
-                        help='String indicator to define the mode (train, record, calibrate, test).')
+                        help='String indicator to define the mode (train, test).')
 
     parser.set_defaults()
     args = parser.parse_args()

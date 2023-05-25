@@ -36,7 +36,7 @@ import numpy as np
 from tools.logger import Logger
 from tools.data_utils import get_train_test_datapath, processImageDataset
 import snn_model_tools.snn_model_utils as model
-from snn_model_tools.snn_model_evaluation import get_new_assignments, get_recognized_number_ranking
+from non_modular_snn.snn_model_evaluation import get_new_assignments, get_recognized_number_ranking
 from snn_model_tools.snn_model_plot import plot_rateMonitors, plot_spikeMonitors, plot_spikeMonitorsCount
 
 
@@ -490,7 +490,7 @@ if __name__ == "__main__":
                         help='Additional string arguments to use for saving test outputs in testing')
     parser.add_argument('--ad_path', type=str, default="_offset{}".format(0))
     
-    parser.add_argument('--mode', type=str, choices=["train", "test"], default="train", 
+    parser.add_argument('--mode', type=str, choices=["train", "record", "calibrate", "test"], default="train", 
                         help='String indicator to define the mode (train, record, calibrate, test).')
 
     parser.set_defaults()

@@ -1,4 +1,29 @@
 #! /usr/bin/env python
+
+'''
+MIT License
+
+Copyright (c) 2023 Somayeh Hussaini, Michael Milford and Tobias Fischer
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+'''
+
 import argparse
 import os
 import os.path
@@ -10,8 +35,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sn
 
-
-from snn_model_tools.snn_model_evaluation import (get_accuracy,
+from non_modular_snn.snn_model_evaluation import (get_accuracy,
                                     get_recognized_number_ranking, 
                                     get_training_neuronal_spikes,
                                     compute_recall, invert_dMat,
@@ -36,9 +60,8 @@ def main(args):
     
     print(args)
 
-    offset_after_skip_list = np.arange(args.offset_after_skip, args.num_test_imgs+args.offset_after_skip, args.num_labels)
+    offset_after_skip_list = np.arange(args.offset_after_skip, args.num_test_labels+args.offset_after_skip, args.num_labels)
     print("Offset after skip: ", offset_after_skip_list)
-    
     
     test_labels = []
     validation_result_monitor = []
@@ -52,8 +75,8 @@ def main(args):
         results_path = './outputs/outputs_ne{}_L{}'.format(args.n_e, args.num_labels) + args.ad_path.format(offset_after_skip) + '/'        
         data_path =  results_path + NA_name + "/" + args.multi_path + "/" 
         
-        validation_result_filename = results_path + "resultPopVecs{}.npy".format(args.org_num_test_imgs)
-        testing_result_filename = results_path + "resultPopVecs{}_test_E{}.npy".format(args.num_test_imgs, args.epochs)
+        validation_result_filename = results_path + "resultPopVecs{}.npy".format(args.num_query_imgs)
+        testing_result_filename = results_path + "resultPopVecs{}_test_E{}.npy".format(args.num_test_labels, args.epochs)
         print("Validation result monitor (available = {}): {}".format(os.path.isfile(validation_result_filename), validation_result_filename) )
         print("Testing result monitor (available = {}): {}".format(os.path.isfile(testing_result_filename), testing_result_filename) )
         validation_result_monitor.append(np.load(validation_result_filename))
@@ -124,12 +147,12 @@ def main(args):
         
     if not use_precomputed:        
             
-        test_results = np.zeros((len(unique_assignments), args.num_test_imgs))
-        summed_rates = np.zeros((len(unique_assignments), args.num_test_imgs))
+        test_results = np.zeros((len(unique_assignments), args.num_test_labels))
+        summed_rates = np.zeros((len(unique_assignments), args.num_test_labels))
         
         sum_train_spikes_list, train_spikes_list, learnt_neurons_list, len_learnt_labels_list = get_training_neuronal_spikes(unique_assignments, args.use_weighted_assignments, all_assignments)
 
-        for i in range(args.num_test_imgs):
+        for i in range(args.num_test_labels):
             test_results[:,i], summed_rates[:,i] = get_recognized_number_ranking(assignments, testing_result_monitor_all[i,:], unique_assignments, sum_train_spikes_list, train_spikes_list, learnt_neurons_list, len_learnt_labels_list, args.use_weighted_assignments)
 
         np.save(data_path + "summed_rates.npy", summed_rates)
@@ -181,7 +204,6 @@ def main(args):
 
 
 
-
 def plot_recallAtN(data_path, n_values, recallAtN, filename, label=''):
     
     sn.set_context("paper", font_scale=2, rc={"lines.linewidth": 2})
@@ -215,10 +237,7 @@ def ignore_hyperactive_neurons(neuron_spikes, testing_result_monitor, threshold_
 
     
 
-
-
 if __name__ == "__main__":
-    
     
     parser = argparse.ArgumentParser()
     
@@ -226,6 +245,8 @@ if __name__ == "__main__":
                         help='Dataset folder name that is relative to this repo. The folder must exist in this directory: ./../data/')
     parser.add_argument('--num_labels', type=int, default=5, 
                         help='Number of training place labels for a single module.')
+    parser.add_argument('--num_test_labels', type=int, default=5, 
+                        help='Number of testing place labels.')
     parser.add_argument('--use_weighted_assignments', type=bool, default=False, 
                         help='Value to define the type of neuronal assignment to use: standard=False, weighted=True') 
     
@@ -235,11 +256,7 @@ if __name__ == "__main__":
                         help='The offset to apply for selecting places after skipping every n images.')
     parser.add_argument('--folder_id', type=str, default="NRD_SFS", 
                         help='Id to distinguish the traverses used from the dataset.')
-    parser.add_argument('--num_train_imgs', type=int, default=10, 
-                        help='Number of entire training images.')
-    parser.add_argument('--num_test_imgs', type=int, default=15, 
-                        help='Number of entire testing images.')
-    parser.add_argument('--org_num_test_imgs', type=int, default=15, 
+    parser.add_argument('--num_query_imgs', type=int, default=15, 
                         help='Number of entire testing images and calibration images.')
     
     parser.add_argument('--epochs', type=int, default=20, 
@@ -251,7 +268,6 @@ if __name__ == "__main__":
     
     parser.add_argument('--ad_path', type=str, default="_offset{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}")  
-    
 
     parser.set_defaults()
     args = parser.parse_args()

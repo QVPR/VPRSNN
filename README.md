@@ -3,23 +3,50 @@
 [![QUT Centre for Robotics](https://img.shields.io/badge/collection-QUT%20Robotics-%23043d71?style=flat-square)](https://qcr.ai)
 
 
-This repository contains code for our RA-L paper "Spiking Neural Networks for Visual Place Recognition via Weighted Neuronal Assignments" which was also be presented at ICRA 2022. DOI: [10.1109/LRA.2022.3149030](https://doi.org/10.1109/LRA.2022.3149030)
+This repository contains code for two papers: 
+* Modular SNN: [Ensembles of Compact, Region-specific & Regularized Spiking Neural Networks for Scalable Place Recognition (ICRA 2023)](https://arxiv.org/abs/2209.08723)
 
-The pre-print version of the paper is available on [arxiv](https://arxiv.org/abs/2109.06452). 
+* Non-modular SNN: [Spiking Neural Networks for Visual Place Recognition via Weighted Neuronal Assignments (RAL + ICRA2022)](https://arxiv.org/abs/2109.06452) DOI: [10.1109/LRA.2022.3149030](https://doi.org/10.1109/LRA.2022.3149030)
+
+
+## Overview
+Please refer to the readme files of the `modular_snn` and `non_modular_snn` folders for instructions to run the code for modular SNN and non-modular SNN works. 
+
+
+## Modular SNNs for scalable place recognition (Modular SNN)
+
+Video: https://www.youtube.com/watch?v=TNDdfmPSe1U&t=137s
+
+<p style="width: 50%; display: block; margin-left: auto; margin-right: auto">
+  <img src="./resources/ICRA2023.png" alt="ModularSNN for scalable place recognition"/>
+</p>
+
+## License and Citation
+
+This code is licensed under [MIT License](./LICENSE). If you use our modular SNN code, please cite our [paper](https://arxiv.org/abs/2209.08723):
+
+```
+@article{hussaini2022ensembles,
+  title={Ensembles of Compact, Region-specific \& Regularized Spiking Neural Networks for Scalable Place Recognition},
+  author={Hussaini, Somayeh and Milford, Michael and Fischer, Tobias},
+  journal={arXiv preprint arXiv:2209.08723},
+  year={2022}
+}
+```
+
+## SNNs for VPR (non-modular SNN)
 
 Video: https://www.youtube.com/watch?v=VGfv4ZVOMkw
-
-
-<span style="color:blue">[UPDATE] **We are excited to share that the code for our recent related paper "Ensembles of Compact, Region-specific & Regularized Spiking Neural Networks for Scalable Place Recognition" will also be added in this repository in a few weeks. Stay tuned!**</span>
-
 
 <p style="width: 50%; display: block; margin-left: auto; margin-right: auto">
   <img src="./resources/cover_photo.png" alt="VPRSNN method diagram"/>
 </p>
 
-## Citation
+## License and Citation
 
-If using code within this repository, please refer to our [paper](https://doi.org/10.1109/LRA.2022.3149030) in your publications:
+This code is licensed under [MIT License](./LICENSE). If you use our non-modular SNN code, please cite our [paper](https://arxiv.org/abs/2109.06452):
+
+
 ```
 @article{hussaini2022spiking,
   title={Spiking Neural Networks for Visual Place Recognition via Weighted Neuronal Assignments},
@@ -42,58 +69,13 @@ Updated for Brian2: zxzhijia: https://github.com/zxzhijia/Brian2STDPMNIST
 Updated for Python3: sdpenguin: https://github.com/sdpenguin/Brian2STDPMNIST
 
 
-This code is licensed under [MIT License](./LICENSE).
 
 
-## Setup
+Please refer to the [wiki tab](https://github.com/QVPR/VPRSNN/wiki) for additional ablation studies. 
 
-Our recommended tool to install all dependencies is conda (or better: mamba). Please download and install [conda](https://docs.conda.io/en/latest/) or [mamba](https://mamba.readthedocs.io/en/latest/), if you have not installed it yet. 
-
-
-You can create the conda environment using one of the following options. 
-
-Option 1: 
-
-```bash
-conda create -n vprsnn -c conda-forge python==3.7.9 numpy matplotlib pathlib opencv tqdm pickle5 brian2 scikit-learn ipykernel numba cudatoolkit autopep8 pandas seaborn
-```
-
-Option 2 (using the provided environment.yml file): 
-
-```bash 
-conda env create -f environment.yml
-```
-
-Option 3 (using the provided requirements.txt file):
-```bash 
-conda create --name vprsnn --file requirements.txt -c conda-forge
-```
-
-Activate the conda environment: 
-
-```bash
-conda activate vprsnn
-```
-
-## Run 
-### Prerequisites
-1. Please ensure you have created and activated the conda environment.  
-2. Nordland datasets, which can be downloaded from: https://webdiis.unizar.es/~jmfacil/pr-nordland/#download-dataset (If not already available)
-
-### Training a new network:
-1. Generate the initial synaptic weights using snn_model_tools.random_connection_generator.py, modify the number of output neurons if required. 
-2. Modify the training configurations on main file "snn_model.py" including changing "args.test_mode" to "False" (if needed) and run the code. 
-3. The trained weights will be stored in a subfolder in the folder "weights", which can be used to test the performance.
-4. The output will be stored in a subfolder in the folder "outputs", which also contains log files. 
-
-### Testing with pretrained weights
-1. To test your trained model, set "args.test_mode" to "True", and run snn_model.py file. The trained weights for a model with 100 places (current configuration across all files) is provided in a subfolder in weights folder.  
-2. Run the "snn_model_tools.weight_visualisations.py" to visualise the learnt weights. 
-3. Run "snn_model_tools.snn_model_evaluation.py" to do the neuronal assignments and perform the predictions. 
-4. The output will be stored in the same subfolder as in the training folder "outputs", which also contains log files. 
 
 
 ## Acknowledgements
-This work was supported by the Australian Government via grant AUSMURIB000001 associated with ONR MURI grant N00014-19-1-2571, Intel Research via grant RV3.248.Fischer, and the Queensland University of Technology (QUT) through the Centre for Robotics.
+These works were supported by the Australian Government, Intel Labs, and the Queensland University of Technology (QUT) through the Centre for Robotics.
 
 

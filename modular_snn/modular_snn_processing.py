@@ -25,85 +25,74 @@ SOFTWARE.
 '''
 
 import argparse
-import numpy as np
+import wandb
 
-from snn_model_tools.random_connection_generator import main as generate_random_connections
-from snn_model import main as snn_model_main
-from snn_model_tools.snn_model_evaluation import main as evaluate_snn_module
+from tools.wandb_utils import create_hpc_bashscript_wandb, get_wandb_sweep_id, setup_wandb_config
 
 
 
+'''
+To submit the jobs on hpc, simply:
+- conda activate vprsnn
+- python modular_snn/modular_snn_processing.py or
+- python modular_snn/modular_snn_processing.py --project_name="EnsSNN" --num_test_labels=100 --num_labels=25 --epochs=60 --dataset='nordland' --folder_id='NRD_SFS' --sweep_name='sweep_1' --mode="train" --run_mode="local"
+- python modular_snn/modular_snn_processing.py --project_name="EnsSNN" --num_test_labels=2700 --num_labels=25 --epochs=60 --dataset='nordland' --folder_id='NRD_SFS' --sweep_name='sweep_2' --mode="train" --run_mode="local"
+'''
 
 
-def main(args):    
+
+
+def main(args):
     
-    args.ad_path = args.ad_path.format(args.offset_after_skip, args.tc_gi) 
+
+    offset_after_skip_list = list(range(0, args.num_cal_labels+args.num_test_labels, args.num_labels))
     
+    ad_path_base = args.ad_path
+    ad_path_test_base = args.ad_path_test
+    args_multi_path_base = args.multi_path
     num_test_labels_base = args.num_test_labels
-    offset_after_skip_base = args.offset_after_skip
+    mode_base = args.mode
+
+    if args.run_mode == "wandb_hpc" or args.run_mode == "wandb_local":
+        sweep_config = setup_wandb_config(offset_after_skip_list, args)
+        sweep_id = get_wandb_sweep_id(args, sweep_config)
+        print("sweep id: ", sweep_id)
+
+    for offset_after_skip in offset_after_skip_list:
+        
+        args.offset_after_skip = offset_after_skip
+        args.num_test_labels = num_test_labels_base
+        
+        if args.run_mode == "local":
+            
+            from modular_snn.one_snn_module_processing import main as process_one_snn_module
+            args.ad_path = ad_path_base
+            args.ad_path_test = ad_path_test_base
+            args.multi_path = args_multi_path_base
+            args.mode = mode_base
+            process_one_snn_module(args) 
+        
     
-    if args.mode == "test":
-        
-        if offset_after_skip_base >= args.num_cal_labels: 
+        elif args.run_mode == "wandb_hpc":
             
-            args.ad_path_test = "_test_E{}".format(args.epochs)
-            args.num_test_labels = num_test_labels_base
-            args.offset_after_skip = args.num_cal_labels
-            
-            snn_model_main(args)
-            
-            args.first_epoch = (args.num_train_imgs*args.epochs)
-            args.last_epoch = (args.num_train_imgs*args.epochs) + 1       
-            args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)  
-            args.offset_after_skip = offset_after_skip_base
-            
-            evaluate_snn_module(args)
-        
-    
-    else: 
-        # update the initial random values of connections 
-        generate_random_connections(args)
-        
-        
-        # Run the python script - train        
-        args.mode = "train"
-        args.ad_path_test = ""
-        args.offset_after_skip = offset_after_skip_base
-        
-        snn_model_main(args)
+            create_hpc_bashscript_wandb(args, offset_after_skip_list, sweep_id)
 
 
-        # Run the python script - record 
-        args.mode = "record"
-        args.ad_path_test = ""
-        args.num_test_labels = args.num_cal_labels + num_test_labels_base
-        args.offset_after_skip = 0
-        
-        snn_model_main(args)
-        
-                
-        if offset_after_skip_base < args.num_cal_labels: 
+        elif args.run_mode == "wandb_local":
 
-            # Run the python script - Calibrate
-            args.mode = "calibrate"
-            args.ad_path_test = "_test_E{}".format(args.epochs)
-            args.num_test_labels = args.num_cal_labels
-            args.offset_after_skip = 0
-            
-            snn_model_main(args)
-            
-            args.first_epoch = (args.num_train_imgs*args.epochs)
-            args.last_epoch = (args.num_train_imgs*args.epochs) + 1       
-            args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)  
-            
-            evaluate_snn_module(args)
-
+            from modular_snn.one_snn_module_processing import main as process_one_snn_module
+            args.ad_path = ad_path_base
+            args.ad_path_test = ad_path_test_base
+            args.multi_path = args_multi_path_base
+            args.mode = mode_base
+            wandb.agent(sweep_id=sweep_id, project=args.project_name, function=process_one_snn_module, count=len(offset_after_skip_list))
 
 
 
 if __name__ == "__main__":
-    
+
     parser = argparse.ArgumentParser()
+    
     parser.add_argument('--dataset', type=str, default="nordland", 
                         help='Dataset folder name that is relative to this repo. The folder must exist in this directory: ./../data/')
     parser.add_argument('--num_labels', type=int, default=5, 
@@ -120,40 +109,41 @@ if __name__ == "__main__":
                         help="Intensity scaling factor to change the range of input pixel values")
     parser.add_argument('--use_weighted_assignments', type=bool, default=False, 
                         help='Value to define the type of neuronal assignment to use: standard=False, weighted=True')
-    
+
     parser.add_argument('--skip', type=int, default=8, 
                         help='The number of images to skip between each place label.')
     parser.add_argument('--offset_after_skip', type=int, default=0, 
                         help='The offset to apply for selecting places after skipping every n images.')
     parser.add_argument('--folder_id', type=str, default="NRD_SFS", 
                         help='Id to distinguish the traverses used from the dataset.')
-    parser.add_argument('--num_train_imgs', type=int, default=10, 
-                        help='Number of entire training images.')
-    parser.add_argument('--num_test_imgs', type=int, default=15, 
-                        help='Number of entire testing images.')
-    parser.add_argument('--first_epoch', type=int, default=200, 
-                        help='For use of neuronal assignments, the first training iteration number in saved items.')
-    parser.add_argument('--last_epoch', type=int, default=201, 
-                        help='For use of neuronal assignments, the last training iteration number in saved items.')
     parser.add_argument('--update_interval', type=int, default=50, 
                         help='The number of iterations to save at one time in output matrix.')
     parser.add_argument('--epochs', type=int, default=20, 
                         help='Number of passes through the dataset.')
     parser.add_argument('--n_e', type=int, default=100, 
                         help='Number of excitatory output neurons. The number of inhibitory neurons are defined the same.')
+    parser.add_argument('--threshold_i', type=int, default=0, 
+                        help='Threshold value used to ignore the hyperactive neurons.')
 
     parser.add_argument('--ad_path_test', type=str, default="_test_E{}", 
                         help='Additional string arguments to use for saving test outputs in testing')
     parser.add_argument('--ad_path', type=str, default="_offset{}")             
-    parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}") 
-
-    parser.add_argument('--mode', type=str, choices=["train", "test"], default="train", 
+    parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}")   
+    
+    parser.add_argument('--mode', type=str, choices=["train", "record", "calibrate", "test"], default="train", 
                         help='String indicator to define the mode (train, record, calibrate, test).')
-
+    
+    parser.add_argument('--run_mode', type=str, choices=["local", "wandb_local", "wandb_hpc"], default="local", 
+                        help='Mode to run the modular network.')
+    parser.add_argument('--sweep_name', type=str, default="sweep_1", 
+                        help='Wandb sweep name.')
+    parser.add_argument('--project_name', type=str, default="modularSNN", 
+                        help='Wandb project name.')
+    parser.add_argument('--username', type=str, default="somayeh-h", 
+                        help='Wandb user name.')
+    
     parser.set_defaults()
     args = parser.parse_args()
-    
-    
+
     main(args)
-
-
+    

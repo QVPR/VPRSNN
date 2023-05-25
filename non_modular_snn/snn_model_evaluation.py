@@ -23,8 +23,6 @@ SOFTWARE.
 '''
 
 
-
-
 import argparse
 import os
 import os.path
@@ -35,9 +33,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sn
 from sklearn.metrics import auc
+from tools.data_utils import get_train_test_datapath
 
 from tools.logger import Logger
-
 
 
 
@@ -49,12 +47,14 @@ def main(args):
 
     main_folder_path = data_path 
     Path(main_folder_path).mkdir(parents=True, exist_ok=True)
+    
+    org_data_path = ['./../data/{}/'.format(args.dataset)]  
+    train_data_path, test_data_path = get_train_test_datapath(org_data_path)
 
     folder_id = args.folder_id 
-    num_training_imgs = args.num_train_imgs 
     num_testing_imgs = args.num_test_labels   
-    first_epoch = args.first_epoch          
-    last_epoch = args.last_epoch           
+    first_epoch = int(args.num_labels * len(train_data_path) *  args.epochs)      
+    last_epoch = int(args.num_labels * len(train_data_path) *  args.epochs) + 1            
     update_interval = args.update_interval  
     num_training_sweeps = args.epochs 
     n_e = args.n_e
@@ -75,7 +75,7 @@ def main(args):
     print(args)
     ending = '.npy'
 
-    training_ending = str( int(num_training_imgs * num_training_sweeps )) 
+    training_ending = str( int(args.num_labels * len(train_data_path) * num_training_sweeps )) 
     testing_ending = str(num_testing_imgs )  
 
     training_result_monitor = np.load(main_folder_path + 'resultPopVecs' + training_ending + ending)
@@ -539,12 +539,7 @@ def invert_dMat(dMat):
                 
 
 
-    
-
-
-
 if __name__ == "__main__":
-    
     
     parser = argparse.ArgumentParser()
     
@@ -557,14 +552,6 @@ if __name__ == "__main__":
                         help='The offset to apply for selecting places after skipping every n images.')
     parser.add_argument('--folder_id', type=str, default="NRD_SFS", 
                         help='Id to distinguish the traverses used from the dataset.')
-    parser.add_argument('--num_train_imgs', type=int, default=10, 
-                        help='Number of entire training images.')
-    parser.add_argument('--num_test_imgs', type=int, default=15, 
-                        help='Number of entire testing images.')
-    parser.add_argument('--first_epoch', type=int, default=200, 
-                        help='For use of neuronal assignments, the first training iteration number in saved items.')
-    parser.add_argument('--last_epoch', type=int, default=201, 
-                        help='For use of neuronal assignments, the last training iteration number in saved items.')
     parser.add_argument('--update_interval', type=int, default=50, 
                         help='The number of iterations to save at one time in output matrix.')
     parser.add_argument('--epochs', type=int, default=20, 

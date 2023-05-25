@@ -45,14 +45,14 @@ def create_hpc_bashscript_wandb(args, offset_after_skip, sweep_id):
 cd $PBS_O_WORKDIR
 
 # Load conda environment
-conda activate snn_v2
+conda activate vprsnn
 
 
-wandb agent --count 1 somayeh-h/${project_name}/${sweep_id} 
+wandb agent --count 1 ${username}/${project_name}/${sweep_id} 
 
 ''')
 
-    os.system('qsub -v project_name={},sweep_id={} run_offset{}.sh'.format(args.project_name, sweep_id, offset_after_skip))
+    os.system('qsub -v username={},project_name={},sweep_id={} run_offset{}.sh'.format(args.username, args.project_name, sweep_id, offset_after_skip))
 
 
 
@@ -70,7 +70,7 @@ def get_wandb_sweep_id(args, sweep_config):
 def setup_wandb_config(offset_after_skip_list, args):
     
     sweep_config = {
-    'program': 'single_snn_module_processing.py',
+    'program': 'modular_snn/one_snn_module_processing.py',
     'method': 'grid',
     'name': args.sweep_name,
     'parameters': {
