@@ -63,7 +63,7 @@ conda activate vprsnn
 
 1. run `non_modular_snn/single_snn_model_processing.py` with `args.mode="train"` to: 
 
-    * Generate the initial synaptic weights of the SNN model using `snn_model_tools/random_connection_generator.py`.
+    * Generate the initial synaptic weights of the SNN model using `tools/random_connection_generator.py`.
     * Train the snn model using `non_modular_snn/snn_model.py` on the reference set. 
     * The trained weights will be stored in a subfolder in the folder "weights", which can be used to test the performance.
     * The output will be stored in a subfolder in the folder "outputs", which also contains log files. 
@@ -74,7 +74,7 @@ conda activate vprsnn
 
     * Test your trained model on the query set. The trained weights for a model with 100 places (current configuration across all files) is provided in a subfolder in weights folder.  
     * Evaluate the performance of the model on the query set using `non_modular_snn/snn_model_evaluation.py`. 
-2. Run `snn_model_tools/weight_visualisations.py` to visualise the learnt weights.
+2. Run `tools/weight_visualisations.py` to visualise the learnt weights.
 3. The output will be stored in the same subfolder as in the training folder "outputs", which also contains log files. 
 
 

@@ -26,7 +26,7 @@ SOFTWARE.
 
 import argparse
 
-from snn_model_tools.random_connection_generator import main as generate_random_connections
+from tools.random_connection_generator import main as generate_random_connections
 from non_modular_snn.snn_model import main as snn_model_main
 from non_modular_snn.snn_model_evaluation import main as evaluate_snn_module
 
