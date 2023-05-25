@@ -1,5 +1,10 @@
 # Non-modular SNN: Spiking Neural Networks for Visual Place Recognition via Weighted Neuronal Assignments
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+[![stars](https://img.shields.io/github/stars/QVPR/VPRSNN.svg?style=flat-square)](https://github.com/QVPR/VPRSNN/stargazers)
+![GitHub repo size](https://img.shields.io/github/repo-size/QVPR/VPRSNN.svg?style=flat-square)
+[![QUT Centre for Robotics](https://img.shields.io/badge/collection-QUT%20Robotics-%23043d71?style=flat-square)](https://qcr.ai)
+
 ## License and Citation
 
 This code is licensed under [MIT License](./LICENSE). If you use our non-modular SNN code, please cite our [paper](https://arxiv.org/abs/2109.06452):
