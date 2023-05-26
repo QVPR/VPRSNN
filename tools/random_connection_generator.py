@@ -31,6 +31,40 @@ from pathlib import Path
 import numpy as np
 
 
+
+
+def main(args):
+
+    np.random.seed(0)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--n_e', type=int, default=args.n_e, help='Number of excitatory output neurons. The number of inhibitory neurons are the same.')
+    parser.add_argument('--ad_path', type=str, default=args.ad_path)
+
+    parser.set_defaults()
+    args = parser.parse_args()
+    print(args)
+
+    if args.ad_path != "": 
+        dataPath = './random/random_ne{}'.format(args.n_e) + args.ad_path + '/'
+    else:
+        dataPath = './random/random_ne{}/'.format(args.n_e) 
+
+    Path(dataPath).mkdir(parents=True, exist_ok=True)
+
+    imWidth = 28 
+    imHeight = 28
+    n_e = args.n_e
+    n_i = args.n_e
+    ending = ''
+
+    create_weights(dataPath, imWidth, imHeight, n_e, n_i, ending)
+    
+    print('done')
+    
+    
+
+
 def sparsenMatrix(baseMatrix, pConn):
     weightMatrix = np.zeros(baseMatrix.shape)
     numWeights = 0
@@ -97,34 +131,6 @@ def create_weights(dataPath, imWidth=28, imHeight=28, n_e=400, n_i=400, ending =
     np.save(dataPath+connNameAiAe + ending, weightList)
 
 
-def main():
-
-    np.random.seed(0)
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--n_e', type=int, default=400, help='Number of excitatory output neurons. The number of inhibitory neurons are the same.')
-    parser.add_argument('--ad_path', type=str, default='_offset0')
-
-    parser.set_defaults()
-    args = parser.parse_args()
-    print(args)
-
-    if args.ad_path != "": 
-        dataPath = './random/random_ne{}'.format(args.n_e) + args.ad_path + '/'
-    else:
-        dataPath = './random/random_ne{}/'.format(args.n_e) 
-
-    Path(dataPath).mkdir(parents=True, exist_ok=True)
-
-    imWidth = 28 
-    imHeight = 28
-    n_e = args.n_e
-    n_i = args.n_e
-    ending = ''
-
-    create_weights(dataPath, imWidth, imHeight, n_e, n_i, ending)
-    
-    print('done')
     
     
 

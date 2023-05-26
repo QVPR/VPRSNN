@@ -1,7 +1,7 @@
 '''
 MIT License
 
-Copyright (c) 2022 Somayeh Hussaini, Michael Milford and Tobias Fischer
+Copyright (c) 2023 Somayeh Hussaini, Michael Milford and Tobias Fischer
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -109,7 +109,7 @@ def processImageDataset(path, type, imWidth, imHeight, num_patches=7, num_labels
 
     if "nordland" in path[0]:
         dirPath = os.path.abspath(os.getcwd())
-        filtered_names_path = dirPath + "/nordland_imageNames.txt"
+        filtered_names_path = "{}/dataset_imagenames/nordland_imageNames.txt".format(dirPath)
         filtered_index = get_filtered_name_paths(filtered_names_path)
 
     frames = []
@@ -121,8 +121,8 @@ def processImageDataset(path, type, imWidth, imHeight, num_patches=7, num_labels
         nordland = True if "nordland" in imgList[0] else False 
 
         j = 0
-        ii = 0 
-        kk = 0
+        ii = 0  # keep count of number of images
+        kk = 0  # keep track of image indices, considering offset after skip
 
         for i, imPath in enumerate(imgList):
             
@@ -153,7 +153,7 @@ def processImageDataset(path, type, imWidth, imHeight, num_patches=7, num_labels
             frame = processImage(frame, imWidth, imHeight, num_patches)  
             frames.append(frame)
 
-            labels.append(ii)
+            labels.append(kk)
 
             if nordland: 
                 idx = np.where(np.array(filtered_index) == i)[0][0]
@@ -167,6 +167,7 @@ def processImageDataset(path, type, imWidth, imHeight, num_patches=7, num_labels
             kk += 1 
     
     print("indices used in {}:\n{}".format(type, paths_used))
+    print("labels used in {}:\n{}".format(type, labels))
 
     y = np.array([ [labels[i]] for i in range(len(labels)) ])
     data = {'x': np.array(frames), 'y': y, 'rows': imWidth, 'cols': imHeight}
