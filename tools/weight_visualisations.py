@@ -25,9 +25,15 @@ SOFTWARE.
 
 
 
+import os
+import sys
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
 
 from non_modular_snn.snn_model import get_2d_input_weights
 

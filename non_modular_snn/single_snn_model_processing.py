@@ -25,6 +25,14 @@ SOFTWARE.
 '''
 
 import argparse
+import os
+import sys
+
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
 
 from tools.random_connection_generator import main as generate_random_connections
 from non_modular_snn.snn_model import main as snn_model_main
@@ -36,7 +44,7 @@ def main(args):
     
     args.ad_path = args.ad_path.format(args.offset_after_skip, args.tc_gi) 
 
-    if args.mode == "test":
+    if args.process_mode == "test":
             
         args.ad_path_test = "_test_E{}".format(args.epochs)
         snn_model_main(args)
@@ -44,7 +52,7 @@ def main(args):
         args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)  
         evaluate_snn_module(args)
     
-    elif args.mode == "train": 
+    elif args.process_mode == "train": 
         # update the initial random values of connections 
         generate_random_connections(args)
         
@@ -95,7 +103,7 @@ if __name__ == "__main__":
     parser.add_argument('--ad_path', type=str, default="_offset{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}") 
 
-    parser.add_argument('--mode', type=str, choices=["train", "test"], default="test", 
+    parser.add_argument('--process_mode', type=str, choices=["train", "test"], default="train", 
                         help='String indicator to define the mode (train, test).')
 
     parser.set_defaults()

@@ -25,6 +25,14 @@ SOFTWARE.
 '''
 
 import argparse
+import os
+import sys
+
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
 
 from modular_snn.modular_snn_config_evaluation import main as evaluate_modular_snn_config
 
@@ -52,14 +60,14 @@ def main(args):
         args.threshold_i = threshold_i
         args.multi_path = args_multi_path_base.format(args.epochs, args.num_query_imgs, args.threshold_i)
 
-        if args.mode == "calibrate": 
+        if args.process_mode == "calibrate": 
             
             args.num_test_labels = args.num_cal_labels 
             args.offset_after_skip = 0
             evaluate_modular_snn_config(args)
         
         
-        elif args.mode == "test":
+        elif args.process_mode == "test":
             
             args.num_test_labels = args_num_test_labels_base  
             args.offset_after_skip = args_offset_after_skip_base
@@ -99,7 +107,7 @@ if __name__ == "__main__":
     parser.add_argument('--threshold_i', type=int, default=0, 
                         help='Threshold value used to ignore the hyperactive neurons.')
     
-    parser.add_argument('--mode', type=str, choices=["calibrate", "test"], default="train", 
+    parser.add_argument('--process_mode', type=str, choices=["calibrate", "test"], default="train", 
                         help='String indicator to define the mode (calibrate, test).')
     
     parser.add_argument('--ad_path', type=str, default="_offset{}")             

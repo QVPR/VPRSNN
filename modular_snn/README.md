@@ -60,23 +60,35 @@ conda activate vprsnn
 
 ### Training a modular spiking neural network:
 
-1. Run `modular_snn/modular_snn_processing.py` with `args.mode="train"` to individually:
+1. Run `modular_snn/modular_snn_processing.py` with `args.process_mode="train"` to individually:
 
     * Process training all modules of the network on geographically non-overlapping regions of the reference dataset. 
     * Record the responses of all trained modules to the entire reference images (used by all modules) after training (for hyperactive neuron detection)
     * Calibrate the calibration modules of the network using a geographically separate set of query images from the test set.  
-        * Run `modular_snn/modular_snn_evaluation.py` with `args.mode = "calibrate"` to evaluate the performance of the calibration modules using a range of threshold values to detect and then remove the hyperactive neurons. Select the best-performing threshold for testing. 
+        * Run `modular_snn/modular_snn_evaluation.py` with `args.process_mode = "calibrate"` to evaluate the performance of the calibration modules using a range of threshold values to detect and then remove the hyperactive neurons. Select the best-performing threshold for testing. 
+
+
+Train the modular SNN with the default configs locally: 
+```bash
+python modular_snn/modular_snn_processing.py --run_mode="local" --process_mode="train"
+```
+
 
 Notes:
 
-* Setting the `args.mode="train"` will also automatically performs the record and calibrate processes after the training is finished. 
+* Setting the `args.process_mode="train"` will also automatically performs the record and calibrate processes after the training is finished. 
 * Set `args.run_mode` to one of the available choices `["local", "wandb_local", "wandb_hpc"]` to either process the modules locally (sequential), locally using wandb tool, or on a high performance computing (hpc) platform using wandb tool. 
 
 
 ### Testing with learned weights
 
-1. Run `modular_snn/modular_snn_processing.py` with `args.mode="test"` to test the modular spiking neural network on the test region of the query dataset. 
-2. Run `modular_snn/modular_snn_evaluation.py` with `args.mode="test"` to evaluate the performance of the modular spiking neural network on the test region of the query dataset. 
+1. Run `modular_snn/modular_snn_processing.py` with `args.process_mode="test"` to test the modular spiking neural network on the test region of the query dataset. 
+2. Run `modular_snn/modular_snn_evaluation.py` with `args.process_mode="test"` to evaluate the performance of the modular spiking neural network on the test region of the query dataset. 
+
+Test the modular SNN with the default configs locally: 
+```bash
+python modular_snn/modular_snn_processing.py --run_mode="local" --process_mode="test"
+```
 
 
 ## Acknowledgements

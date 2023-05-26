@@ -35,6 +35,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sn
 
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
+
 from non_modular_snn.snn_model_evaluation import (get_accuracy,
                                     get_recognized_number_ranking, 
                                     get_training_neuronal_spikes,
@@ -44,7 +50,6 @@ from non_modular_snn.snn_model_evaluation import (get_accuracy,
                                     plot_precision_recall)
 
 from tools.logger import Logger
-
 matplotlib.rcParams['ps.fonttype'] = 42
 
 

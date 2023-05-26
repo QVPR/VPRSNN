@@ -33,8 +33,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sn
 from sklearn.metrics import auc
-from tools.data_utils import get_train_test_datapath
 
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
+
+from tools.data_utils import get_train_test_datapath
 from tools.logger import Logger
 
 
@@ -543,6 +549,20 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
     
+    parser.add_argument('--dataset', type=str, default="nordland", 
+                        help='Dataset folder name that is relative to this repo. The folder must exist in this directory: ./../data/')
+    parser.add_argument('--num_labels', type=int, default=5, 
+                        help='Number of training place labels for a single module.')
+    parser.add_argument('--num_cal_labels', type=int, default=0, 
+                        help="Number of calibration place labels.")
+    parser.add_argument('--num_test_labels', type=int, default=5, 
+                        help='Number of testing place labels.')
+    parser.add_argument('--tc_ge', type=float, default=1.0, 
+                        help='Time constant of conductance of excitatory synapses AeAi')
+    parser.add_argument('--tc_gi', type=float, default=0.5, 
+                        help='Time constant of conductance of inhibitory synapses AiAe')
+    parser.add_argument('--intensity', type=int, default=4, 
+                        help="Intensity scaling factor to change the range of input pixel values")
     parser.add_argument('--use_weighted_assignments', type=bool, default=False, 
                         help='Value to define the type of neuronal assignment to use: standard=False, weighted=True')
 
@@ -564,7 +584,10 @@ if __name__ == "__main__":
     parser.add_argument('--ad_path_test', type=str, default="_test_E{}", 
                         help='Additional string arguments to use for saving test outputs in testing')
     parser.add_argument('--ad_path', type=str, default="_offset{}")             
-    parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}")   
+    parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}") 
+
+    parser.add_argument('--process_mode', type=str, choices=["train", "test"], default="test", 
+                        help='String indicator to define the mode (train, test).') 
     
     parser.set_defaults()
 

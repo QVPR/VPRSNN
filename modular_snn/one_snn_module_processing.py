@@ -25,10 +25,17 @@ SOFTWARE.
 '''
 
 import argparse
+import os
+import sys
+
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
 
 from tools.random_connection_generator import main as generate_random_connections
 from non_modular_snn.snn_model import main as snn_model_main
-from non_modular_snn.snn_model_evaluation import main as evaluate_snn_module
 
 
 
@@ -39,7 +46,7 @@ def main(args):
     num_test_labels_base = args.num_test_labels
     offset_after_skip_base = args.offset_after_skip
     
-    if args.mode == "test" and offset_after_skip_base >= args.num_cal_labels:
+    if args.process_mode == "test" and offset_after_skip_base >= args.num_cal_labels:
             
         args.ad_path_test = "_test_E{}".format(args.epochs)
         args.num_test_labels = num_test_labels_base
@@ -47,7 +54,7 @@ def main(args):
         snn_model_main(args)
 
     
-    elif args.mode == "train": 
+    elif args.process_mode == "train": 
         
         # update the initial random values of connections 
         generate_random_connections(args)
@@ -57,10 +64,10 @@ def main(args):
         args.offset_after_skip = offset_after_skip_base
         snn_model_main(args)
 
-        args.mode = "record"
+        args.process_mode = "record"
 
     
-    if args.mode == "record":
+    if args.process_mode == "record":
         
         # Run the python script - record 
         args.ad_path_test = ""
@@ -68,10 +75,10 @@ def main(args):
         args.offset_after_skip = 0
         snn_model_main(args)
 
-        args.mode = "calibrate"
+        args.process_mode = "calibrate"
         
     
-    if args.mode == "calibrate" and offset_after_skip_base < args.num_cal_labels:
+    if args.process_mode == "calibrate" and offset_after_skip_base < args.num_cal_labels:
                    
         # Run the python script - Calibrate
         args.ad_path_test = "_test_E{}".format(args.epochs)
@@ -79,7 +86,7 @@ def main(args):
         args.offset_after_skip = 0
         snn_model_main(args)
         
-        args.mode = "train"
+        args.process_mode = "train"
 
 
 
@@ -122,7 +129,7 @@ if __name__ == "__main__":
     parser.add_argument('--ad_path', type=str, default="_offset{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}") 
 
-    parser.add_argument('--mode', type=str, choices=["train", "record", "calibrate", "test"], default="train", 
+    parser.add_argument('--process_mode', type=str, choices=["train", "record", "calibrate", "test"], default="train", 
                         help='String indicator to define the mode (train, record, calibrate, test).')
 
     parser.set_defaults()

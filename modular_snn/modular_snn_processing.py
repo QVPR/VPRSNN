@@ -25,7 +25,15 @@ SOFTWARE.
 '''
 
 import argparse
+import os
+import sys
 import wandb
+
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
 
 from tools.wandb_utils import create_hpc_bashscript_wandb, get_wandb_sweep_id, setup_wandb_config
 
@@ -35,8 +43,11 @@ from tools.wandb_utils import create_hpc_bashscript_wandb, get_wandb_sweep_id, s
 To submit the jobs on hpc, simply:
 - conda activate vprsnn
 - python modular_snn/modular_snn_processing.py or
-- python modular_snn/modular_snn_processing.py --project_name="EnsSNN" --num_test_labels=100 --num_labels=25 --epochs=60 --dataset='nordland' --folder_id='NRD_SFS' --sweep_name='sweep_1' --mode="train" --run_mode="local"
-- python modular_snn/modular_snn_processing.py --project_name="EnsSNN" --num_test_labels=2700 --num_labels=25 --epochs=60 --dataset='nordland' --folder_id='NRD_SFS' --sweep_name='sweep_2' --mode="train" --run_mode="local"
+- python modular_snn/modular_snn_processing.py --project_name="EnsSNN" --num_test_labels=100 --num_labels=25 --epochs=60 --dataset='nordland' --folder_id='NRD_SFS' --sweep_name='sweep_1' --process_mode="train" --run_mode="local"
+- python modular_snn/modular_snn_processing.py --project_name="EnsSNN" --num_test_labels=2700 --num_labels=25 --epochs=60 --dataset='nordland' --folder_id='NRD_SFS' --sweep_name='sweep_2' --process_mode="train" --username="my_username" --run_mode="wandb_hpc"
+- python modular_snn/modular_snn_processing.py --run_mode="local" --process_mode="train" --dataset='nordland' --num_labels=5 --num_cal_labels=5 --num_test_labels=20 --offset_after_skip=0 --folder_id='NRD_SFS' --epochs=20
+
+
 '''
 
 
@@ -51,7 +62,7 @@ def main(args):
     ad_path_test_base = args.ad_path_test
     args_multi_path_base = args.multi_path
     num_test_labels_base = args.num_test_labels
-    mode_base = args.mode
+    mode_base = args.process_mode
 
     if args.run_mode == "wandb_hpc" or args.run_mode == "wandb_local":
         sweep_config = setup_wandb_config(offset_after_skip_list, args)
@@ -69,7 +80,7 @@ def main(args):
             args.ad_path = ad_path_base
             args.ad_path_test = ad_path_test_base
             args.multi_path = args_multi_path_base
-            args.mode = mode_base
+            args.process_mode = mode_base
             process_one_snn_module(args) 
         
     
@@ -84,7 +95,7 @@ def main(args):
             args.ad_path = ad_path_base
             args.ad_path_test = ad_path_test_base
             args.multi_path = args_multi_path_base
-            args.mode = mode_base
+            args.process_mode = mode_base
             wandb.agent(sweep_id=sweep_id, project=args.project_name, function=process_one_snn_module, count=len(offset_after_skip_list))
 
 
@@ -130,7 +141,7 @@ if __name__ == "__main__":
     parser.add_argument('--ad_path', type=str, default="_offset{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}")   
     
-    parser.add_argument('--mode', type=str, choices=["train", "record", "calibrate", "test"], default="train", 
+    parser.add_argument('--process_mode', type=str, choices=["train", "record", "calibrate", "test"], default="train", 
                         help='String indicator to define the mode (train, record, calibrate, test).')
     
     parser.add_argument('--run_mode', type=str, choices=["local", "wandb_local", "wandb_hpc"], default="local", 
@@ -139,7 +150,7 @@ if __name__ == "__main__":
                         help='Wandb sweep name.')
     parser.add_argument('--project_name', type=str, default="modularSNN", 
                         help='Wandb project name.')
-    parser.add_argument('--username', type=str, default="somayeh-h", 
+    parser.add_argument('--username', type=str, default="my_username", 
                         help='Wandb user name.')
     
     parser.set_defaults()

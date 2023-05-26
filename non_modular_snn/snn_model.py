@@ -33,6 +33,12 @@ import matplotlib.cm as cmap
 import matplotlib.pyplot as plt
 import numpy as np
 
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
+
 from tools.logger import Logger
 from tools.data_utils import get_train_test_datapath, processImageDataset
 import tools.snn_model_utils as model
@@ -58,7 +64,7 @@ def main(args):
         "test": "logfile_test",
     }
     
-    test_mode, logfile_name = set_mode(args.mode, modes)
+    test_mode, logfile_name = set_mode(args.process_mode, modes)
     sys.stdout = Logger(outputsPath, logfile_name)
     print(args)
 
@@ -466,7 +472,9 @@ if __name__ == "__main__":
                         help='Dataset folder name that is relative to this repo. The folder must exist in this directory: ./../data/')
     parser.add_argument('--num_labels', type=int, default=5, 
                         help='Number of training place labels for a single module.')
-    parser.add_argument('--num_test_labels', type=int, default=15, 
+    parser.add_argument('--num_cal_labels', type=int, default=0, 
+                        help="Number of calibration place labels.")
+    parser.add_argument('--num_test_labels', type=int, default=5, 
                         help='Number of testing place labels.')
     parser.add_argument('--tc_ge', type=float, default=1.0, 
                         help='Time constant of conductance of excitatory synapses AeAi')
@@ -474,24 +482,31 @@ if __name__ == "__main__":
                         help='Time constant of conductance of inhibitory synapses AiAe')
     parser.add_argument('--intensity', type=int, default=4, 
                         help="Intensity scaling factor to change the range of input pixel values")
+    parser.add_argument('--use_weighted_assignments', type=bool, default=False, 
+                        help='Value to define the type of neuronal assignment to use: standard=False, weighted=True')
     
     parser.add_argument('--skip', type=int, default=8, 
                         help='The number of images to skip between each place label.')
     parser.add_argument('--offset_after_skip', type=int, default=0, 
                         help='The offset to apply for selecting places after skipping every n images.')
+    parser.add_argument('--folder_id', type=str, default="NRD_SFS", 
+                        help='Id to distinguish the traverses used from the dataset.')
     parser.add_argument('--update_interval', type=int, default=50, 
                         help='The number of iterations to save at one time in output matrix.')
     parser.add_argument('--epochs', type=int, default=20, 
                         help='Number of passes through the dataset.')
     parser.add_argument('--n_e', type=int, default=100, 
-                        help='Number of excitatory output neurons. The number of inhibitory neurons are defined the same.')    
-    
+                        help='Number of excitatory output neurons. The number of inhibitory neurons are defined the same.')
+    parser.add_argument('--threshold_i', type=int, default=0, 
+                        help='Threshold value used to ignore the hyperactive neurons.')
+
     parser.add_argument('--ad_path_test', type=str, default="_test_E{}", 
                         help='Additional string arguments to use for saving test outputs in testing')
-    parser.add_argument('--ad_path', type=str, default="_offset{}".format(0))
-    
-    parser.add_argument('--mode', type=str, choices=["train", "record", "calibrate", "test"], default="train", 
-                        help='String indicator to define the mode (train, record, calibrate, test).')
+    parser.add_argument('--ad_path', type=str, default="_offset{}")             
+    parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}") 
+
+    parser.add_argument('--process_mode', type=str, choices=["train", "test"], default="test", 
+                        help='String indicator to define the mode (train, test).')
 
     parser.set_defaults()
     args = parser.parse_args()
