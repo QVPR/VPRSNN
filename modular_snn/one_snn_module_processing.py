@@ -36,6 +36,7 @@ sys.path.append(parent_dir)
 
 from tools.random_connection_generator import main as generate_random_connections
 from non_modular_snn.snn_model import main as snn_model_main
+from non_modular_snn.snn_model_evaluation import main as evaluate_snn_module
 
 
 
@@ -52,6 +53,10 @@ def main(args):
         args.num_test_labels = num_test_labels_base
         args.offset_after_skip = args.num_cal_labels
         snn_model_main(args)
+        
+        args.offset_after_skip = offset_after_skip_base
+        args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)
+        evaluate_snn_module(args)
 
     
     elif args.process_mode == "train": 
@@ -85,6 +90,10 @@ def main(args):
         args.num_test_labels = args.num_cal_labels
         args.offset_after_skip = 0
         snn_model_main(args)
+        
+        args.offset_after_skip = offset_after_skip_base
+        args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)
+        evaluate_snn_module(args)
         
         args.process_mode = "train"
 
@@ -123,6 +132,8 @@ if __name__ == "__main__":
                         help='Number of passes through the dataset.')
     parser.add_argument('--n_e', type=int, default=100, 
                         help='Number of excitatory output neurons. The number of inhibitory neurons are defined the same.')
+    parser.add_argument('--threshold_i', type=int, default=0, 
+                        help='Threshold value used to ignore the hyperactive neurons.')
 
     parser.add_argument('--ad_path_test', type=str, default="_test_E{}", 
                         help='Additional string arguments to use for saving test outputs in testing')
