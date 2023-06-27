@@ -36,29 +36,16 @@ import numpy as np
 def main(args):
 
     np.random.seed(0)
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--n_e', type=int, default=args.n_e, help='Number of excitatory output neurons. The number of inhibitory neurons are the same.')
-    parser.add_argument('--ad_path', type=str, default=args.ad_path)
-
-    parser.set_defaults()
-    args = parser.parse_args()
-    print(args)
-
-    if args.ad_path != "": 
-        dataPath = './random/random_ne{}'.format(args.n_e) + args.ad_path + '/'
-    else:
-        dataPath = './random/random_ne{}/'.format(args.n_e) 
-
+    
+    dataPath = './random/random_ne{}{}/'.format(args.n_e, args.ad_path)
     Path(dataPath).mkdir(parents=True, exist_ok=True)
 
     imWidth = 28 
     imHeight = 28
     n_e = args.n_e
     n_i = args.n_e
-    ending = ''
 
-    create_weights(dataPath, imWidth, imHeight, n_e, n_i, ending)
+    create_weights(dataPath, imWidth, imHeight, n_e, n_i)
     
     print('done')
     
@@ -66,6 +53,7 @@ def main(args):
 
 
 def sparsenMatrix(baseMatrix, pConn):
+    
     weightMatrix = np.zeros(baseMatrix.shape)
     numWeights = 0
     numTargetWeights = baseMatrix.shape[0] * baseMatrix.shape[1] * pConn
@@ -76,10 +64,11 @@ def sparsenMatrix(baseMatrix, pConn):
             weightMatrix[idx] = baseMatrix[idx]
             weightList[numWeights] = (idx[0], idx[1], baseMatrix[idx])
             numWeights += 1
+            
     return weightMatrix, weightList
         
     
-def create_weights(dataPath, imWidth=28, imHeight=28, n_e=400, n_i=400, ending = ''):
+def create_weights(dataPath, imWidth=28, imHeight=28, n_e=400, n_i=400):
     
     n_input = imWidth * imHeight   
 
@@ -92,7 +81,7 @@ def create_weights(dataPath, imWidth=28, imHeight=28, n_e=400, n_i=400, ending =
     pConn['ei'] = 0.0025
     pConn['ie'] = 0.9
     
-    
+        
     print('create random connection matrices')
     connNameXeAe = 'XeAe'
     weightMatrix = np.random.random((n_input, n_e)) + 0.01
@@ -102,7 +91,7 @@ def create_weights(dataPath, imWidth=28, imHeight=28, n_e=400, n_i=400, ending =
         weightMatrix, weightList = sparsenMatrix(weightMatrix, pConn['ee_input'])
     else:
         weightList = [(i, j, weightMatrix[i,j]) for j in range(n_e) for i in range(n_input)]
-    np.save(dataPath+connNameXeAe + ending, weightList)
+    np.save(dataPath+connNameXeAe, weightList)
         
     
     print('create connection matrices from E->I which are purely random')
@@ -114,7 +103,7 @@ def create_weights(dataPath, imWidth=28, imHeight=28, n_e=400, n_i=400, ending =
         weightMatrix *= weight['ei']
         weightMatrix, weightList = sparsenMatrix(weightMatrix, pConn['ei'])
     print('save connection matrix', connNameAeAi)
-    np.save(dataPath+connNameAeAi + ending, weightList)
+    np.save(dataPath+connNameAeAi, weightList)
                 
         
     print('create connection matrices from I->E which are purely random')
@@ -128,15 +117,28 @@ def create_weights(dataPath, imWidth=28, imHeight=28, n_e=400, n_i=400, ending =
         weightMatrix *= weight['ie']
         weightMatrix, weightList = sparsenMatrix(weightMatrix, pConn['ie'])
     print('save connection matrix', connNameAiAe)
-    np.save(dataPath+connNameAiAe + ending, weightList)
+    np.save(dataPath+connNameAiAe, weightList)
 
 
     
     
 
 if __name__ == "__main__":
+    
+    n_e = 400 
+    seed = 0
+    ad_path = ""
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--n_e', type=int, default=n_e)
+    parser.add_argument('--seed', type=int, default=seed)
+    parser.add_argument('--ad_path', type=str, default=ad_path)
 
-    main()
+    parser.set_defaults()
+    args = parser.parse_args()
+    print(args)
+
+    main(args)
 
     
 
