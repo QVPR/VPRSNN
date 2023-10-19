@@ -41,10 +41,21 @@ sys.path.append(parent_dir)
 
 from tools.logger import Logger
 from tools.data_utils import get_train_test_datapath, processImageDataset
-import tools.snn_model_utils as model
+import tools.snn_model_utils as snn_model_class
 from non_modular_snn.snn_model_evaluation import get_new_assignments, get_recognized_number_ranking
 from tools.snn_model_plot import plot_rateMonitors, plot_spikeMonitors, plot_spikeMonitorsCount
 
+
+# set the default target for code generation: 'auto', 'cython', 'numpy'
+target = 'cython'                 
+b2.prefs.codegen.target = target
+b2.prefs.codegen.cpp.extra_compile_args_gcc = []
+
+# on hpc with PBS scheduling system, set cache directory to temp directory of the job  
+cache_dir = os.environ['TMPDIR']
+print("Cache dir: ", cache_dir)
+b2.prefs.codegen.runtime.cython.cache_dir = cache_dir
+b2.prefs.codegen.runtime.cython.multiprocess_safe = False
 
 
 
@@ -115,24 +126,214 @@ def main(args):
     Xe = 'Xe'
     population_name = 'A'
     Ae = 'Ae'
+    Ai = 'Ai'
+    ending = '.npy'
 
     # create snn model 
     print("Create model")
-    snn_model = create_snn_model(weight_path, num_training_examples, args.n_e, n_i, n_input, population_name, Xe, Ae, test_mode=test_mode, use_monitors=use_monitors)
+    # snn_model = create_snn_model(weight_path, num_training_examples, args.n_e, n_i, n_input, population_name, Xe, Ae, test_mode=test_mode, use_monitors=use_monitors)
+        
+    v_rest_e = -65 * b2.mV
+    v_rest_i = -60 * b2.mV
+    v_reset_e = -65 * b2.mV
+    v_reset_i = -45 * b2.mV
+    v_thresh_e = -52 * b2.mV
+    v_thresh_i = -40 * b2.mV
+    refrac_e = 5 * b2.ms
+    refrac_i = 2 * b2.ms
 
+
+    input_connection_name = 'XA'
+    input_conn_name = 'ee_input'
+    recurrent_conn_names = ['ei', 'ie']
+
+    weight = {}
+    delay = {}
+    delay['ee_input'] = (0*b2.ms,10*b2.ms)
+    input_intensity = args.intensity 
+    start_input_intensity = input_intensity
+
+    tc_pre_ee = 20*b2.ms
+    tc_post_1_ee = 20*b2.ms
+    tc_post_2_ee = 40*b2.ms
+    wmax_ee = 1.0
+
+    tc_e = 100 * b2.ms 
+    tc_i = 10 * b2.ms 
+
+    tc_ge = args.tc_ge * b2.ms
+    tc_gi = args.tc_gi * b2.ms 
+
+    # learning rates 
+    nu_ee_pre =  0.0001     
+    nu_ee_post = 0.01       
+
+    if test_mode:
+        scr_e = 'v = v_reset_e; timer = 0*ms'
+    else:
+        tc_theta = 1e7 * b2.ms
+        theta_plus_e = 0.05 * b2.mV
+        scr_e = 'v = v_reset_e; theta += theta_plus_e; timer = 0*ms'
+
+    offset = 20.0*b2.mV
+    v_thresh_e_str = '(v>(theta - offset + v_thresh_e)) and (timer>refrac_e)'
+    v_thresh_i_str = 'v>v_thresh_i'
+    v_reset_i_str = 'v=v_reset_i'
+
+    neuron_eqs_e = '''
+            dv/dt = ((v_rest_e - v) + (I_synE+I_synI) / nS) / (tc_e)  : volt (unless refractory)
+            I_synE = ge * nS * -v               : amp
+            I_synI = gi * nS * (-100.*mV-v)     : amp
+            dge/dt = -ge/(tc_ge)               : 1
+            dgi/dt = -gi/(tc_gi)               : 1
+            '''
+
+    if test_mode:
+        neuron_eqs_e += '\n  theta :volt'
+    else:
+        neuron_eqs_e += '\n  dtheta/dt = -theta / (tc_theta)  : volt'
+
+    neuron_eqs_e += '\n  dtimer/dt = 0.1  : second'
+
+    neuron_eqs_i = '''
+            dv/dt = ((v_rest_i - v) + (I_synE+I_synI) / nS) / (tc_i)  : volt (unless refractory)
+            I_synE = ge * nS * -v               : amp
+            I_synI = gi * nS * (-85.*mV-v)      : amp
+            dge/dt = -ge/(tc_ge)               : 1
+            dgi/dt = -gi/(tc_gi)               : 1
+            '''
+
+    eqs_stdp_ee = '''
+                    post2before                            : 1
+                    dprees/dt  = -prees/(tc_pre_ee)        : 1 (event-driven)
+                    dpost1/dt  = -post1/(tc_post_1_ee)     : 1 (event-driven)
+                    dpost2/dt  = -post2/(tc_post_2_ee)     : 1 (event-driven)
+                '''
+
+    eqs_stdp_pre_ee = '''   
+                        prees = 1.0
+                        w = clip(w + nu_ee_pre * post1, 0, wmax_ee)
+                        '''
+
+    eqs_stdp_post_ee = '''
+                        post2before = post2 
+                        w = clip(w + nu_ee_post * prees * post2before, 0, wmax_ee)
+                        post1 = 1.0
+                        post2 = 1.0
+                        '''
+
+    neuron_groups = {}
+    input_groups = {}
+    connections = {}
+    spike_monitors = {}
+    result_monitor = np.zeros((update_interval,args.n_e))
+    
+    neuron_groups['e'] = b2.NeuronGroup(args.n_e, neuron_eqs_e, threshold= v_thresh_e_str, refractory= refrac_e, reset= scr_e, method='euler', name='e')
+    neuron_groups['i'] = b2.NeuronGroup(n_i, neuron_eqs_i, threshold= v_thresh_i_str, refractory= refrac_i, reset= v_reset_i_str, method='euler', name='i')
+
+
+    # create network population and recurrent connections
+    neuron_groups[Ae] = neuron_groups['e'][0 : args.n_e]
+    neuron_groups[Ai] = neuron_groups['i'][0 : n_i]
+
+    neuron_groups[Ae].v = v_rest_e - 40. * b2.mV
+    neuron_groups[Ai].v = v_rest_i - 40. * b2.mV
+    
+    if test_mode: 
+        theta_filename = weight_path + 'theta_' + population_name + str(num_training_examples) + ending 
+        if not os.path.isfile(theta_filename): 
+            theta_filename = weight_path + 'theta_' + population_name + ending 
+            
+        print(theta_filename)
+        neuron_groups['e'].theta = np.load(theta_filename) * b2.volt 
+
+    else:
+        neuron_groups['e'].theta = np.ones((args.n_e)) * 20.0*b2.mV
+
+    weight['ei'] = 10.4
+    weight['ie'] = 17.0
+
+    for conn_type in recurrent_conn_names:
+        connName = population_name + conn_type[0] + population_name + conn_type[1]
+        
+        if connName == 'AeAi':
+            weightList = np.array([(i, i, weight['ei']) for i in range(args.n_e)])
+            weightMatrix = snn_model_class.get_matrix_from_file(weightList=weightList, fileName=None, n_input=n_input, n_e=args.n_e, n_i=n_i) 
+        elif connName == 'AiAe':
+            weightList = np.full((n_i, args.n_e), weight['ie'])
+            np.fill_diagonal(weightList, 0)
+            weightList = np.array([(i, j, weightList[i,j]) for i in range(n_i) for j in range(args.n_e)])
+            weightMatrix = snn_model_class.get_matrix_from_file(weightList=weightList, fileName=None, n_input=n_input, n_e=args.n_e, n_i=n_i)  
+
+        model = 'w : 1'
+        pre = 'g%s_post += w' % conn_type[0]
+        post = ''
+
+        connections[connName] = b2.Synapses(neuron_groups[connName[0:2]], neuron_groups[connName[2:4]], model=model, on_pre=pre, on_post=post, name='S_'+connName[0:2])
+        connections[connName].connect() # all-to-all connection
+        connections[connName].w = weightMatrix[connections[connName].i, connections[connName].j]
+    
+    spike_monitors[Ae] = b2.SpikeMonitor(neuron_groups[Ae], name='Ae_SM')
+
+
+    # create input population and connections from input populations
+    input_groups[Xe] = b2.PoissonGroup(n_input, 0*b2.Hz, name='Xe')
+
+    weight['ee_input'] = 0.3
+    connName = input_connection_name[0] + input_conn_name[0] + input_connection_name[1] + input_conn_name[1]
+    
+    weight_filename = weight_path + connName + str(num_training_examples) + ending
+    if not os.path.isfile(weight_filename): 
+        weight_filename = weight_path + connName + ending
+
+    if test_mode:
+        print(weight_filename)
+        weightMatrix = snn_model_class.get_matrix_from_file(weightList=None, fileName=weight_filename, n_input=n_input, n_e=args.n_e, n_i=n_i)
+    else:
+        weightList = np.random.random((n_input, args.n_e)) + 0.01
+        weightList *= weight['ee_input']
+        weightList = np.array([(i, j, weightList[i,j]) for j in range(args.n_e) for i in range(n_input)])
+        weightMatrix = snn_model_class.get_matrix_from_file(weightList=weightList, fileName=None, n_input=n_input, n_e=args.n_e, n_i=n_i)
+            
+    
+    model = 'w : 1'
+    pre = 'g%s_post += w' % input_conn_name[0]
+    post = ''
+    if not test_mode:
+        model += eqs_stdp_ee
+        pre += '\n ' + eqs_stdp_pre_ee 
+        post = eqs_stdp_post_ee
+
+    connections[connName] = b2.Synapses(input_groups[connName[0:2]], neuron_groups[connName[2:4]], model=model, on_pre=pre, on_post=post, name='S_'+connName)
+
+    minDelay = delay[input_conn_name][0]
+    maxDelay = delay[input_conn_name][1]
+    deltaDelay = maxDelay - minDelay
+
+    connections[connName].connect(True) # all-to-all connection
+    connections[connName].delay = 'minDelay + rand() * deltaDelay'
+    connections[connName].w = weightMatrix[connections[connName].i, connections[connName].j]
+
+
+    # run the simulation and set inputs
+    net = b2.Network()
+    for obj_list in [neuron_groups, input_groups, connections, spike_monitors]: 
+        for key in obj_list:
+            net.add(obj_list[key])        
+        
     # run the simulation 
     num_labels = args.num_labels if not test_mode else args.num_test_labels
     
     figures = [1,2]
 
     if not test_mode:
-        plot_2d_input_weights(snn_model.connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1], tag="1")
+        plot_2d_input_weights(connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1], tag="1")
         
     if do_plot_performance:
         performance = plot_initial_performance(num_examples, update_interval, outputsPath, figures[0])
 
-    snn_model.input_groups[Xe].rates = 0 * b2.Hz
-    snn_model.run_network(initial_resting_time)
+    input_groups[Xe].rates = 0 * b2.Hz
+    net.run(initial_resting_time)
 
     input_intensity = args.intensity 
     start_input_intensity = input_intensity
@@ -142,7 +343,7 @@ def main(args):
     input_numbers = np.zeros(num_examples)
     outputNumbers = np.zeros((num_examples, num_labels))
     result_monitor = np.zeros((update_interval,args.n_e))
-    previous_spike_count = np.copy(snn_model.spike_monitors[Ae].count[:])
+    previous_spike_count = np.copy(spike_monitors[Ae].count[:])
 
     j = 0
     kkk = 0 
@@ -152,13 +353,13 @@ def main(args):
         if test_mode:
             spike_rates = testing_data['x'][j%num_testing_imgs,:,:].reshape((n_input)) / input_intensity                  
         else:
-            normalize_weights(snn_model.connections, args.n_e)
+            normalize_weights(connections, args.n_e)
             spike_rates = training_data['x'][j%num_training_imgs,:,:].reshape((n_input)) / input_intensity              
         
-        snn_model.input_groups[Xe].rates = spike_rates * b2.Hz
+        input_groups[Xe].rates = spike_rates * b2.Hz
 
         print('run number:', j+1, 'of', int(num_examples))
-        snn_model.run_network(single_example_time)
+        net.run(single_example_time, report='text')
 
         if j % update_interval == 0 and j > 0:
             assignments = get_new_assignments(result_monitor[:], input_numbers[j-update_interval : j], args.n_e)
@@ -167,17 +368,17 @@ def main(args):
             np.save(outputsPath + "resultPopVecs" + str(j), result_monitor) 
 
             if not test_mode:                
-                plot_2d_input_weights(snn_model.connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1])                
-                save_connections(snn_model, weightsPath, str(j), save_all=False)
-                save_theta(snn_model.neuron_groups[Ae].theta, weightsPath, population_name, str(j))
+                plot_2d_input_weights(connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1])                
+                save_connections(connections, weightsPath, str(j), save_all=False)
+                save_theta(neuron_groups[Ae].theta, weightsPath, population_name, str(j))
 
-        current_spike_count = np.asarray(snn_model.spike_monitors[Ae].count[:]) - previous_spike_count
-        previous_spike_count = np.copy(snn_model.spike_monitors[Ae].count[:])
+        current_spike_count = np.asarray(spike_monitors[Ae].count[:]) - previous_spike_count
+        previous_spike_count = np.copy(spike_monitors[Ae].count[:])
 
         if repeat_no_spikes and np.sum(current_spike_count) < min_num_spikes and kkk == 0:
             input_intensity += 1
-            snn_model.input_groups[Xe].rates = 0 * b2.Hz        
-            snn_model.run_network(resting_time)
+            input_groups[Xe].rates = 0 * b2.Hz        
+            net.run(resting_time)
             kkk += 1 
 
         else:
@@ -192,8 +393,8 @@ def main(args):
                 
                 print("Classification performance at {}: \n{}".format(j, performance[:int((j/float(update_interval))+1)] ) )      
 
-            snn_model.input_groups[Xe].rates = 0 * b2.Hz
-            snn_model.run_network(resting_time)
+            input_groups[Xe].rates = 0 * b2.Hz
+            net.run(resting_time)
             input_intensity = start_input_intensity
             j += 1
                 
@@ -204,35 +405,32 @@ def main(args):
 
     print('save results')
     if not test_mode:
-        save_theta(snn_model.neuron_groups[Ae].theta, weightsPath, population_name, str(num_examples), use_initial_name=True)
-        save_connections(snn_model, weightsPath, str(num_examples), use_initial_name=True)
+        save_theta(neuron_groups[Ae].theta, weightsPath, population_name, str(num_examples), use_initial_name=True)
+        save_connections(connections, weightsPath, str(num_examples), use_initial_name=True)
 
     np.save(outputsPath + "resultPopVecs" + str(num_examples) + ad_path_test, result_monitor)
     np.save(outputsPath + "inputNumbers" + str(num_examples) + ad_path_test, input_numbers)
 
 
     # plot results
-    plot_2d_input_weights(snn_model.connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1], tag="3")
+    plot_2d_input_weights(connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1], tag="3")
 
-    if snn_model.rate_monitors:
-        plot_rateMonitors(snn_model.rate_monitors, outputsPath, args.epochs, test_mode)
-
-    if snn_model.spike_monitors:
-        plot_spikeMonitors(snn_model.spike_monitors, outputsPath, args.epochs, test_mode)
-        plot_spikeMonitorsCount(snn_model.spike_monitors, outputsPath)
+    if spike_monitors:
+        plot_spikeMonitors(spike_monitors, outputsPath, args.epochs, test_mode)
+        plot_spikeMonitorsCount(spike_monitors, outputsPath)
 
     print('done')
     
 
 
-def save_connections(snn_model, weightsPath, interval = '', save_all=True, use_initial_name=False):
+def save_connections(connections, weightsPath, interval = '', save_all=True, use_initial_name=False):
     '''
     Saves a zip of presynaptic and postsynaptic neuron connection indices and their corresponding weight value 
     '''
 
     print('save connections')
 
-    for conn in snn_model.connections: 
+    for conn in connections: 
         if conn != "XeAe" and not save_all:
             continue 
         elif conn == "AiAe" or conn == "AeAi":
@@ -243,7 +441,7 @@ def save_connections(snn_model, weightsPath, interval = '', save_all=True, use_i
         if use_initial_name:
             updated_interval = ""
             
-        connListSparse = zip(snn_model.connections[conn].i, snn_model.connections[conn].j, snn_model.connections[conn].w)
+        connListSparse = zip(connections[conn].i, connections[conn].j, connections[conn].w)
 
         np.save(weightsPath + conn + updated_interval, list(connListSparse)) 
 

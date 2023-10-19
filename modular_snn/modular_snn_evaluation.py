@@ -38,8 +38,8 @@ from modular_snn.modular_snn_config_evaluation import main as evaluate_modular_s
 
 
 '''
-python3 modular_snn/modular_snn_evaluation.py --num_test_labels=100 --num_labels=25 --folder_id='NRD_SFS' --offset_after_skip=600 --skip=8 --multi_path='epoch{}_T{}_T{}' 
-python3 modular_snn/modular_snn_evaluation.py --num_test_labels=2700 --num_labels=25 --folder_id='NRD_SFS' --offset_after_skip=600 --skip=8 --multi_path='epoch{}_T{}_T{}' 
+python3 modular_snn/modular_snn_evaluation.py --process_mode="calibrate" --dataset="nordland" --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --skip=8 --offset_after_skip=0 --folder_id='NRD_SFS' --n_e=400 --epochs=60 
+python3 modular_snn/modular_snn_evaluation.py --process_mode="test" --dataset="nordland" --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --skip=8 --offset_after_skip=600 --folder_id='NRD_SFS' --n_e=400 --epochs=60 
 
 '''
 
