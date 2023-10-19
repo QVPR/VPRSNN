@@ -27,6 +27,8 @@ SOFTWARE.
 import argparse
 import os
 import sys
+import time
+import numpy as np
 import wandb
 
 
@@ -43,9 +45,11 @@ from tools.wandb_utils import create_hpc_bashscript_wandb, get_wandb_sweep_id, s
 To submit the jobs on hpc, simply:
 - conda activate vprsnn
 - python modular_snn/modular_snn_processing.py or
-- python modular_snn/modular_snn_processing.py --project_name="EnsSNN" --num_test_labels=100 --num_labels=25 --epochs=60 --dataset='nordland' --folder_id='NRD_SFS' --sweep_name='sweep_1' --process_mode="train" --run_mode="local"
-- python modular_snn/modular_snn_processing.py --project_name="EnsSNN" --num_test_labels=2700 --num_labels=25 --epochs=60 --dataset='nordland' --folder_id='NRD_SFS' --sweep_name='sweep_2' --process_mode="train" --username="my_username" --run_mode="wandb_hpc"
 - python modular_snn/modular_snn_processing.py --run_mode="local" --process_mode="train" --dataset='nordland' --num_labels=5 --num_cal_labels=5 --num_test_labels=20 --offset_after_skip=0 --folder_id='NRD_SFS' --epochs=20
+- python modular_snn/modular_snn_processing.py --project_name="VPRSNN_0" --username="username" --sweep_name="sweep_1" --run_mode="hpc" --process_mode="train" --dataset='nordland' --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --skip=8 --offset_after_skip=0 --update_interval=250 --folder_id='NRD_SFS' --n_e=400 --epochs=60
+- python modular_snn/modular_snn_processing.py --project_name="VPRSNN_0" --username="username" --sweep_name="sweep_1" --run_mode="hpc" --process_mode="test" --dataset='nordland' --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --skip=8 --offset_after_skip=0 --update_interval=250 --folder_id='NRD_SFS' --n_e=400 --epochs=60
+- python modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="train" --dataset='nordland' --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --skip=8 --offset_after_skip=0 --update_interval=250 --folder_id='NRD_SFS' --n_e=400 --epochs=60 
+- python modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="test" --dataset='nordland' --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --skip=8 --offset_after_skip=600 --update_interval=250 --folder_id='NRD_SFS' --n_e=400 --epochs=60 
 
 
 '''
@@ -55,8 +59,11 @@ To submit the jobs on hpc, simply:
 
 def main(args):
     
-
-    offset_after_skip_list = list(range(0, args.num_cal_labels+args.num_test_labels, args.num_labels))
+    if args.process_mode == "calibrate":
+        
+        offset_after_skip_list = np.arange(args.offset_after_skip, args.num_cal_labels+args.offset_after_skip, args.num_labels).tolist()
+    else:
+        offset_after_skip_list = np.arange(args.offset_after_skip, args.num_cal_labels+args.num_test_labels, args.num_labels).tolist()
     
     ad_path_base = args.ad_path
     ad_path_test_base = args.ad_path_test
@@ -73,6 +80,7 @@ def main(args):
         
         args.offset_after_skip = offset_after_skip
         args.num_test_labels = num_test_labels_base
+        args.ad_path = ad_path_base.format(args.offset_after_skip)
         
         if args.run_mode == "local":
             
@@ -86,7 +94,7 @@ def main(args):
     
         elif args.run_mode == "wandb_hpc":
             
-            create_hpc_bashscript_wandb(args, offset_after_skip_list, sweep_id)
+            create_hpc_bashscript_wandb(args, sweep_id)
 
 
         elif args.run_mode == "wandb_local":

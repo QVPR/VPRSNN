@@ -30,25 +30,41 @@ import os.path
 import brian2 as b2
 import numpy as np
 
-b2.prefs.codegen.target = "cython"
+
+# set the default target for code generation: 'auto', 'cython', 'numpy'
+target = 'cython'                 
+b2.prefs.codegen.target = target
+b2.prefs.codegen.cpp.extra_compile_args_gcc = []
+
+# on hpc with PBS scheduling system, set cache directory to temp directory of the job  
+cache_dir = os.environ['TMPDIR']
+print("Cache dir: ", cache_dir)
+b2.prefs.codegen.runtime.cython.cache_dir = cache_dir
+b2.prefs.codegen.runtime.cython.multiprocess_safe = False
 
 
-def get_matrix_from_file(fileName, n_input=784, n_e=400, n_i=400):
+
+def get_matrix_from_file(weightList, fileName=None, n_input=784, n_e=400, n_i=400):
     '''
     Loads a weight matrix from given file name, shaped based on number of input neurons, 
     and number of connections 
     '''
 
-    assert os.path.isfile(fileName), "Weight matrix file name does not exist"
+    if fileName != None: 
+        assert os.path.isfile(fileName), "Weight matrix file name does not exist: " + fileName
+        readout = np.load(fileName, allow_pickle=True)
+    elif np.any(weightList):
+        readout = np.array(weightList)
+    else:
+        assert False, "No weight matrix file name or weight list provided"
 
-    if "XeAe" in fileName:
+    if (fileName != None and "XeAe" in fileName) or (np.any(weightList) and weightList.shape[0]==n_e*n_input):
         n_tgt = n_e
         n_src = n_input  
     else:
         n_tgt = n_e
         n_src = n_i
 
-    readout = np.load(fileName)
     print(readout.shape, fileName)
     value_arr = np.zeros((n_src, n_tgt))
 

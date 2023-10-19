@@ -30,9 +30,9 @@ import wandb
 
 
 
-def create_hpc_bashscript_wandb(args, offset_after_skip, sweep_id):
+def create_hpc_bashscript_wandb(args, sweep_id):
 
-    run_filename = 'run_offset{}.sh'.format(offset_after_skip)
+    run_filename = 'run_offset{}.sh'.format(args.offset_after_skip)
     with open (run_filename, 'w') as rsh:
         rsh.write('''\
 #!/bin/bash -l
@@ -52,7 +52,7 @@ wandb agent --count 1 ${username}/${project_name}/${sweep_id}
 
 ''')
 
-    os.system('qsub -v username={},project_name={},sweep_id={} run_offset{}.sh'.format(args.username, args.project_name, sweep_id, offset_after_skip))
+    os.system('qsub -v username={},project_name={},sweep_id={} run_offset{}.sh'.format(args.username, args.project_name, sweep_id, args.offset_after_skip))
 
 
 

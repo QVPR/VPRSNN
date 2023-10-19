@@ -42,8 +42,6 @@ from non_modular_snn.snn_model_evaluation import main as evaluate_snn_module
 
 def main(args):    
     
-    args.ad_path = args.ad_path.format(args.offset_after_skip, args.tc_gi) 
-    
     num_test_labels_base = args.num_test_labels
     offset_after_skip_base = args.offset_after_skip
     
