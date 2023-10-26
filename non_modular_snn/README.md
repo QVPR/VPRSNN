@@ -54,8 +54,13 @@ conda activate vprsnn
 ## Run 
 ### Prerequisites
 1. Please ensure you have created and activated the conda environment.  
-2. Nordland datasets, which can be downloaded from: https://webdiis.unizar.es/~jmfacil/pr-nordland/#download-dataset (If not already available)
+2. Nordland datasets, which can be downloaded from: https://cloudstor.aarnet.edu.au/plus/s/2LtwUtLUFpUiUC8 (If not already available)
 
+Notes: 
+* We use the Spring and Fall traverses to train our modular SNN network. We consider these traverses as our reference dataset, and use it to train our network. 
+* We use the Summer traverse as our query dataset. 
+* We remove sections were the train is moving at speeds less than 15 km/h, the filtered list of images are provided in [`dataset_imagenames/nordland_imageNames.txt`](https://github.com/QVPR/VPRSNN/blob/modularSNN/dataset_imagenames/nordland_imageNames.txt). Please note that this filetered image list file is for the variation of the Nordland dataset provided in the [link](https://cloudstor.aarnet.edu.au/plus/s/2LtwUtLUFpUiUC8) above.
+* We sample both our reference and query datasets to extract places at approximately every 100 m (every 8th image). Our code is provided in [`tools/data_utils.py`](https://github.com/QVPR/VPRSNN/blob/main/tools/data_utils.py) 
 
 
 ## Non-modular SNN 
