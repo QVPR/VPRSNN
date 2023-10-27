@@ -53,13 +53,23 @@ conda activate vprsnn
 ## Run 
 ### Prerequisites
 1. Please ensure you have created and activated the conda environment.  
-2. Nordland datasets, which can be downloaded from: https://cloudstor.aarnet.edu.au/plus/s/2LtwUtLUFpUiUC8 (If not already available)
+2. Nordland dataset
 
-Notes: 
-* We use the entire Spring and Fall traverses to train our modular SNN network. We consider these traverses as our reference dataset, and use it to train our network. 
-* We use the entire Summer traverse as our query dataset, using less than 20% (600 images) for calibration, and using the remaining 80% for testing. 
-* We remove sections were the train is moving at speeds less than 15 km/h, the filtered list of images are provided in [`dataset_imagenames/nordland_imageNames.txt`](https://github.com/QVPR/VPRSNN/blob/modularSNN/dataset_imagenames/nordland_imageNames.txt). Please note that this filetered image list file is for the variation of the Nordland dataset provided in the [link](https://cloudstor.aarnet.edu.au/plus/s/2LtwUtLUFpUiUC8) above.
-* We sample both our reference and query datasets to extract places at approximately every 100 m (every 8th image). Our code is provided in [`tools/data_utils.py`](https://github.com/QVPR/VPRSNN/blob/main/tools/data_utils.py) 
+### Data Processing Instructions
+
+#### Reference Dataset: 
+* We use the entire Spring and Fall traverses to train our modular SNN network. These traverses are our reference dataset which we use to train our network. 
+
+#### Query Dataset:
+* The entire Summer traverse is our query dataset, with less than 20% for calibration (600 images) and the rest for testing.
+
+#### Filtering Criteria for Nordland dataset:
+* Exclude images from segments where the train's speed is below 15 km/h. Refer to the filtered list in [`dataset_imagenames/nordland_imageNames.txt`](https://github.com/QVPR/VPRSNN/blob/modularSNN/dataset_imagenames/nordland_imageNames.txt) relevant to the Nordland dataset variation found [here](https://cloudstor.aarnet.edu.au/plus/s/2LtwUtLUFpUiUC8).
+
+#### Sampling Method:
+* Both datasets are sampled to extract images approximately every 100 meters (every 8th image). The data processing code is in [`tools/data_utils.py`](https://github.com/QVPR/VPRSNN/blob/main/tools/data_utils.py). 
+
+The scripts [`modular_snn/modular_snn_processing.py`](https://github.com/QVPR/VPRSNN/blob/main/modular_snn/modular_snn_processing.py) and [`modular_snn/modular_snn_evaluation.py`](https://github.com/QVPR/VPRSNN/blob/main/modular_snn/modular_snn_evaluation.py) provide the configurations to train, test, calibrate, and evaluate our Modular SNN on the Nordland dataset.
 
 
 ## Modular SNN
