@@ -65,7 +65,7 @@ Video: https://www.youtube.com/watch?v=VGfv4ZVOMkw
 This work is an adaptation of the spiking neural network model from "Unsupervised Learning of Digit Recognition Using Spike-Timing-Dependent Plasticity", Diehl and Cook, (2015) for Visual Place Recognition (VPR). DOI: [10.3389/fncom.2015.00099](https://doi.org/10.3389/fncom.2015.00099).
 Visual Place Recognition is the problem of how a robot can identify whether it has previously visited a place given an image of the place despite challenges including changes in appearance and perceptual aliasing (where two different places look similar). 
 
-The code is based on the following reposities, that include the original code and the modified versions of the original code. 
+The code is based on the following repositories, that include the original code and the modified versions of the original code. 
 
 Original code (Peter U. Diehl): https://github.com/peter-u-diehl/stdp-mnist
 
