@@ -78,6 +78,8 @@ Train the non-modular SNN with the default configs locally:
 python non_modular_snn/single_snn_model_processing.py --process_mode="train"
 ```
 
+The trained weights of our Non-modular SNN on the Nordland dataset, using reference traverses spring and fall, are available [here](https://drive.google.com/drive/u/1/folders/1Qwp3h6D1s2CMLXisAUDVGN1Z9EOAQbwA). 
+
 
 ### Testing with learned weights
 

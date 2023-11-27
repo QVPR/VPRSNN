@@ -96,6 +96,11 @@ Notes:
 * Set `args.run_mode` to one of the available choices `["local", "wandb_local", "wandb_hpc"]` to either process the modules locally (sequential), locally using wandb tool, or on a high performance computing (hpc) platform using wandb tool. 
 
 
+
+**[UPDATE]** We have released the trained weights of our Modular SNN on the Nordland dataset using reference traverses spring and fall, as requested in [QVPR/VPRSNN#4](https://github.com/QVPR/VPRSNN/issues/4). You can access them [here](https://drive.google.com/drive/u/1/folders/1Qwp3h6D1s2CMLXisAUDVGN1Z9EOAQbwA). 
+
+
+
 ### Testing with learned weights
 
 1. Run `modular_snn/modular_snn_processing.py` with `args.process_mode="test"` to test the modular spiking neural network on the test region of the query dataset. 
