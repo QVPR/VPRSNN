@@ -106,11 +106,13 @@ if __name__ == "__main__":
                         help='Number of excitatory output neurons. The number of inhibitory neurons are defined the same.')
     parser.add_argument('--threshold_i', type=int, default=0, 
                         help='Threshold value used to ignore the hyperactive neurons.')
+    parser.add_argument('--seed', type=int, default=0, 
+                        help='Set seed for random generator.')
     
     parser.add_argument('--process_mode', type=str, choices=["calibrate", "test"], default="calibrate", 
                         help='String indicator to define the mode (calibrate, test).')
     
-    parser.add_argument('--ad_path', type=str, default="_offset{}")             
+    parser.add_argument('--ad_path', type=str, default="_offset{}_S{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}")   
         
 

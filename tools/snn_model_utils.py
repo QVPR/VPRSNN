@@ -44,6 +44,38 @@ b2.prefs.codegen.runtime.cython.multiprocess_safe = False
 
 
 
+def get_shuffled_indices(num_test_labels, num_cal_labels, shuffled=True, seed=0):
+    
+    shuffled_data_filename = "shuffled_indices_L{}_S{}.npy".format(num_test_labels, seed)
+    
+    if not shuffled:
+        indices = np.arange(num_test_labels)
+        np.save(shuffled_data_filename, indices) 
+        return indices # np.array([]) 
+    
+    
+    if os.path.exists(shuffled_data_filename):
+        shuffled_indices = np.load(shuffled_data_filename)
+        return shuffled_indices 
+    
+    # use the same images for calibration across all modules 
+    np.random.seed(seed=42)
+    shuffled_indices_cal = np.random.permutation(num_test_labels)
+    shuffled_indices_cal = shuffled_indices_cal[:num_cal_labels]
+    
+    np.random.seed(seed)
+    np.random.shuffle(shuffled_indices_cal)
+    shuffled_indices_all = np.random.permutation(num_test_labels)
+    
+    shuffled_indices_train = np.setdiff1d(shuffled_indices_all, shuffled_indices_cal)
+    np.random.shuffle(shuffled_indices_train)
+    shuffled_indices = np.concatenate((shuffled_indices_cal, shuffled_indices_train))
+    
+    np.save(shuffled_data_filename, shuffled_indices) 
+
+    return shuffled_indices
+
+
 def get_matrix_from_file(weightList, fileName=None, n_input=784, n_e=400, n_i=400):
     '''
     Loads a weight matrix from given file name, shaped based on number of input neurons, 

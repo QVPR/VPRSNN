@@ -40,7 +40,7 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 
-from tools.data_utils import get_train_test_datapath
+from tools.data_utils import get_train_test_imagenames_path
 from tools.logger import Logger
 
 
@@ -53,9 +53,8 @@ def main(args):
 
     main_folder_path = data_path 
     Path(main_folder_path).mkdir(parents=True, exist_ok=True)
-    
-    org_data_path = ['./../data/{}/'.format(args.dataset)]  
-    train_data_path, test_data_path = get_train_test_datapath(org_data_path)
+
+    train_data_path, test_data_path = get_train_test_imagenames_path(args.dataset, args.folder_id)
 
     folder_id = args.folder_id 
     num_testing_imgs = args.num_test_labels   
@@ -580,10 +579,12 @@ if __name__ == "__main__":
                         help='Number of excitatory output neurons. The number of inhibitory neurons are defined the same.')
     parser.add_argument('--threshold_i', type=int, default=0, 
                         help='Threshold value used to ignore the hyperactive neurons.')
+    parser.add_argument('--seed', type=int, default=0, 
+                        help='Set seed for random generator.')
 
     parser.add_argument('--ad_path_test', type=str, default="_test_E{}", 
                         help='Additional string arguments to use for saving test outputs in testing')
-    parser.add_argument('--ad_path', type=str, default="_offset{}")             
+    parser.add_argument('--ad_path', type=str, default="_offset{}_S{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}") 
 
     parser.add_argument('--process_mode', type=str, choices=["train", "test"], default="test", 
