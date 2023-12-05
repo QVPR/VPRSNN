@@ -27,6 +27,7 @@ SOFTWARE.
 import argparse
 import os
 import sys
+import numpy as np
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -44,6 +45,10 @@ def main(args):
     
     num_test_labels_base = args.num_test_labels
     offset_after_skip_base = args.offset_after_skip
+    args_multi_path_base = args.multi_path
+    args_epochs_base = args.epochs
+    
+    epoch_step = 10
     
     if args.process_mode == "test" and offset_after_skip_base >= args.num_cal_labels:
             
@@ -53,7 +58,7 @@ def main(args):
         snn_model_main(args)
         
         args.offset_after_skip = offset_after_skip_base
-        args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)
+        args.multi_path = args_multi_path_base.format(args.epochs, args.num_test_labels, args.threshold_i)
         evaluate_snn_module(args)
 
     
@@ -72,27 +77,39 @@ def main(args):
     
     if args.process_mode == "record":
         
-        # Run the python script - record 
-        args.ad_path_test = ""
-        args.num_test_labels = args.num_cal_labels + num_test_labels_base
-        args.offset_after_skip = 0
-        snn_model_main(args)
+        epoch_list = np.arange(epoch_step, args_epochs_base, epoch_step)
+        print(epoch_list)
+        
+        for epoch in epoch_list:            
+            args.epochs = epoch
+            
+            # Run the python script - record 
+            args.ad_path_test = f"_record_E{args.epochs}"
+            args.num_test_labels = args.num_cal_labels + num_test_labels_base
+            args.offset_after_skip = 0
+            snn_model_main(args)
 
         args.process_mode = "calibrate"
         
     
     if args.process_mode == "calibrate" and offset_after_skip_base < args.num_cal_labels:
-                   
-        # Run the python script - Calibrate
-        args.ad_path_test = "_test_E{}".format(args.epochs)
-        args.num_test_labels = args.num_cal_labels
-        args.offset_after_skip = 0
-        snn_model_main(args)
         
-        args.offset_after_skip = offset_after_skip_base
-        args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)
-        evaluate_snn_module(args)
+        epoch_list = np.arange(epoch_step, args_epochs_base, epoch_step)
+        print(epoch_list)
         
+        for epoch in epoch_list:            
+            args.epochs = epoch
+                        
+            # Run the python script - Calibrate
+            args.ad_path_test = "_test_E{}".format(args.epochs)
+            args.num_test_labels = args.num_cal_labels
+            args.offset_after_skip = 0
+            args.multi_path = args_multi_path_base.format(args.epochs, args.num_test_labels, args.threshold_i)
+            snn_model_main(args)
+            
+            args.offset_after_skip = offset_after_skip_base
+            evaluate_snn_module(args)
+            
         args.process_mode = "train"
 
 

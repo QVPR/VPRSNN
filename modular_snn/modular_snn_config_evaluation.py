@@ -49,6 +49,7 @@ from non_modular_snn.snn_model_evaluation import (get_accuracy,
                                     compute_distance_matrix, 
                                     plot_precision_recall)
 
+from process_ensembles import get_unshuffled_results
 from tools.logger import Logger
 matplotlib.rcParams['ps.fonttype'] = 42
 
@@ -56,10 +57,26 @@ matplotlib.rcParams['ps.fonttype'] = 42
 
 
 def main(args): 
+
+    epoch_step = 10
+    epoch_list = np.arange(epoch_step, args.epochs, epoch_step) if args.process_mode == "calibrate" else [args.epochs]
+    print(epoch_list)
+
+    args_multi_path_base = args.multi_path
+    
+    for epoch in epoch_list:
+        args.epochs = epoch
+        args.multi_path = args_multi_path_base.format(args.epochs, args.num_query_imgs, args.threshold_i)
+        
+        process(args)
+        
+        
+def process(args):
     
     use_precomputed = False 
     
     merged_path = './outputs/outputs_ne{}_L{}'
+    indices_path = "shuffled_indices_L{}_S{}.npy"
     assignment_types = ["standard", "weighted"]   
     NA_name = assignment_types[args.use_weighted_assignments] 
     
@@ -77,13 +94,13 @@ def main(args):
 
     for offset_after_skip in offset_after_skip_list:
         
-        results_path = './outputs/outputs_ne{}_L{}'.format(args.n_e, args.num_labels) + args.ad_path.format(offset_after_skip) + '/'        
+        results_path = f'./outputs/outputs_ne{args.n_e}_L{args.num_labels}' + args.ad_path.format(offset_after_skip) + '/'        
         data_path =  results_path + NA_name + "/" + args.multi_path + "/" 
         
-        validation_result_filename = results_path + "resultPopVecs{}.npy".format(args.num_query_imgs)
-        testing_result_filename = results_path + "resultPopVecs{}_test_E{}.npy".format(args.num_test_labels, args.epochs)
-        print("Validation result monitor (available = {}): {}".format(os.path.isfile(validation_result_filename), validation_result_filename) )
-        print("Testing result monitor (available = {}): {}".format(os.path.isfile(testing_result_filename), testing_result_filename) )
+        validation_result_filename = results_path + f"resultPopVecs{args.num_query_imgs}_record_E{args.epochs}.npy"
+        testing_result_filename = results_path + f"resultPopVecs{args.num_test_labels}_test_E{args.epochs}.npy"
+        print(f"Validation result monitor (available = {os.path.isfile(validation_result_filename)}): {validation_result_filename}" )
+        print(f"Testing result monitor (available = {os.path.isfile(testing_result_filename)}): {testing_result_filename}" )
         validation_result_monitor.append(np.load(validation_result_filename))
         testing_result_monitor.append(np.load(testing_result_filename))
         
@@ -170,6 +187,10 @@ def main(args):
     print("summed_rates shape: {}".format(summed_rates.shape))
     print("test_labels shape: {}".format(np.array(test_labels).shape))
     
+    if os.path.isfile(indices_path.format(args.num_query_imgs, args.seed)):
+        shuffled_indices = np.load(indices_path.format(args.num_query_imgs, args.seed) )
+        summed_rates = get_unshuffled_results(summed_rates, shuffled_indices, args.num_cal_labels, args.process_mode)
+        
     # Invert the scale of the distance matrix 
     rates_matrix = invert_dMat(summed_rates)
     sorted_pred_idx = np.argsort(rates_matrix, axis=0)
