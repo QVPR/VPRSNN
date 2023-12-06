@@ -10,11 +10,13 @@
 This code is licensed under [MIT License](./LICENSE). If you use our modular SNN code, please cite our [paper](https://arxiv.org/abs/2209.08723):
 
 ```
-@article{hussaini2022ensembles,
-  title={Ensembles of Compact, Region-specific \& Regularized Spiking Neural Networks for Scalable Place Recognition},
+@inproceedings{hussaini2023ensembles,
+  title={Ensembles of compact, region-specific \& regularized spiking neural networks for scalable place recognition},
   author={Hussaini, Somayeh and Milford, Michael and Fischer, Tobias},
-  journal={arXiv preprint arXiv:2209.08723},
-  year={2022}
+  booktitle={2023 IEEE International Conference on Robotics and Automation (ICRA)},
+  pages={4200--4207},
+  year={2023},
+  organization={IEEE}
 }
 ```
 

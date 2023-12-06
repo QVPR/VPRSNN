@@ -98,23 +98,6 @@ def get_pred_results(summed_rates_i):
     return sorted_rates_indices
 
 
- 
-'''
-_1: python3 process_ensembles.py --SNN_data_path outputs_ne43200_L2700_offset3275_tcgi0.5_S{}_M2/standard/epoch{}_T3300_T{} --mainfolder_path ./outputs/outputs_models_Nordland_SFS --seeds 0 10 20 30 40 --epochs 70 60 60 60 70 --thresholds 80 180 140 220 60 --num_query_imgs 3300 --num_cal_labels 600
-
-_2: python3 process_ensembles.py --SNN_data_path outputs_ne43200_L2700_offset3275_tcgi0.5_S{}_M2/standard/epoch{}_T3300_T{} --mainfolder_path ./outputs/outputs_models_Nordland_SFW --seeds 0 10 20 30 40 --epochs 60 70 70 60 60 --thresholds 80 40 120 180 300 --num_query_imgs 3300 --num_cal_labels 600
-
-_3: python3 process_ensembles.py --SNN_data_path outputs_ne6000_L375_offset425_tcgi0.5_S{}_M2/standard/epoch{}_T450_T{} --mainfolder_path ./outputs/outputs_models_ORC --seeds 0 10 20 30 40 --epochs 20 60 20 20 30 --thresholds 120 20 180 80 80 --num_query_imgs 450 --num_cal_labels 75
-
-_4: python3 process_ensembles.py --SNN_data_path outputs_ne4800_L300_offset350_tcgi0.5_S{}_M2/standard/epoch{}_T375_T{} --mainfolder_path ./outputs/outputs_models_SFU_Mountain --seeds 10 20 30 40 50 --epochs 30 30 20 20 30 --thresholds 40 40 80 120 60 --num_query_imgs 375 --num_cal_labels 75
-
-_5: python3 process_ensembles.py --SNN_data_path outputs_ne3600_L225_offset250_tcgi0.5_S{}_M2/standard/epoch{}_T275_T{} --mainfolder_path ./outputs/outputs_models_Synthia --seeds 0 10 20 30 40 --epochs 20 20 20 20 20 --thresholds 40 60 160 140 40 --num_query_imgs 275 --num_cal_labels 50
-
-_6: python3 process_ensembles.py --SNN_data_path outputs_ne4800_L300_offset325_tcgi0.5_S{}_M2/standard/epoch{}_T350_T{} --mainfolder_path ./outputs/outputs_models_St_Lucia --seeds 20 30 40 50 70 --epochs 30 20 30 20 20 --thresholds 20 160 40 60 80 --num_query_imgs 350 --num_cal_labels 50
-
-'''
-
-
 if __name__ == "__main__":
     
 
@@ -144,6 +127,23 @@ if __name__ == "__main__":
     main(args)
     
     
+
+ 
+'''
+_1: python3 process_ensembles.py --SNN_data_path outputs_ne43200_L2700_offset3275_tcgi0.5_S{}_M2/standard/epoch{}_T3300_T{} --mainfolder_path ./outputs/outputs_models_Nordland_SFS --seeds 0 10 20 30 40 --epochs 70 60 60 60 70 --thresholds 80 180 140 220 60 --num_query_imgs 3300 --num_cal_labels 600
+
+_2: python3 process_ensembles.py --SNN_data_path outputs_ne43200_L2700_offset3275_tcgi0.5_S{}_M2/standard/epoch{}_T3300_T{} --mainfolder_path ./outputs/outputs_models_Nordland_SFW --seeds 0 10 20 30 40 --epochs 60 70 70 60 60 --thresholds 80 40 120 180 300 --num_query_imgs 3300 --num_cal_labels 600
+
+_3: python3 process_ensembles.py --SNN_data_path outputs_ne6000_L375_offset425_tcgi0.5_S{}_M2/standard/epoch{}_T450_T{} --mainfolder_path ./outputs/outputs_models_ORC --seeds 0 10 20 30 40 --epochs 20 60 20 20 30 --thresholds 120 20 180 80 80 --num_query_imgs 450 --num_cal_labels 75
+
+_4: python3 process_ensembles.py --SNN_data_path outputs_ne4800_L300_offset350_tcgi0.5_S{}_M2/standard/epoch{}_T375_T{} --mainfolder_path ./outputs/outputs_models_SFU_Mountain --seeds 10 20 30 40 50 --epochs 30 30 20 20 30 --thresholds 40 40 80 120 60 --num_query_imgs 375 --num_cal_labels 75
+
+_5: python3 process_ensembles.py --SNN_data_path outputs_ne3600_L225_offset250_tcgi0.5_S{}_M2/standard/epoch{}_T275_T{} --mainfolder_path ./outputs/outputs_models_Synthia --seeds 0 10 20 30 40 --epochs 20 20 20 20 20 --thresholds 40 60 160 140 40 --num_query_imgs 275 --num_cal_labels 50
+
+_6: python3 process_ensembles.py --SNN_data_path outputs_ne4800_L300_offset325_tcgi0.5_S{}_M2/standard/epoch{}_T350_T{} --mainfolder_path ./outputs/outputs_models_St_Lucia --seeds 20 30 40 50 70 --epochs 30 20 30 20 20 --thresholds 20 160 40 60 80 --num_query_imgs 350 --num_cal_labels 50
+
+'''
+
 
 
 

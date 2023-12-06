@@ -5,8 +5,11 @@
 [![QUT Centre for Robotics](https://img.shields.io/badge/collection-QUT%20Robotics-%23043d71?style=flat-square)](https://qcr.ai)
 
 
-This repository contains code for two papers: 
-* Modular SNN: [Ensembles of Compact, Region-specific & Regularized Spiking Neural Networks for Scalable Place Recognition (ICRA 2023)](https://arxiv.org/abs/2209.08723)
+This repository contains code for three of our papers: 
+
+* Ensembles of Modular SNNs with/without sequence matching: [Applications of Spiking Neural Networks in Visual Place Recognition](https://arxiv.org/abs/2311.13186)
+
+* Modular SNN: [Ensembles of Compact, Region-specific & Regularized Spiking Neural Networks for Scalable Place Recognition (ICRA 2023)](https://arxiv.org/abs/2209.08723) DOI: [10.1109/ICRA48891.2023.10160749](https://doi.org/10.1109/ICRA48891.2023.10160749)
 
 * Non-modular SNN: [Spiking Neural Networks for Visual Place Recognition via Weighted Neuronal Assignments (RAL + ICRA2022)](https://arxiv.org/abs/2109.06452) DOI: [10.1109/LRA.2022.3149030](https://doi.org/10.1109/LRA.2022.3149030)
 
@@ -14,18 +17,31 @@ This repository contains code for two papers:
 
 This code is licensed under [MIT License](./LICENSE). 
 
-If you use our modular SNN code, please cite the following [paper](https://arxiv.org/abs/2209.08723):
+If you use our Ensemble of Modular SNNs with/without sequence matching code, please cite the following [paper](https://arxiv.org/abs/2311.13186):
 
 ```
-@article{hussaini2022ensembles,
-  title={Ensembles of Compact, Region-specific \& Regularized Spiking Neural Networks for Scalable Place Recognition},
+@article{hussaini2023applications,
+  title={Applications of Spiking Neural Networks in Visual Place Recognition},
   author={Hussaini, Somayeh and Milford, Michael and Fischer, Tobias},
-  journal={arXiv preprint arXiv:2209.08723},
-  year={2022}
+  journal={arXiv preprint arXiv:2311.13186},
+  year={2023}
 }
 ```
 
-If you use our non-modular SNN code, please cite our [paper](https://arxiv.org/abs/2109.06452) below:
+If you use our Modular SNN code, please cite the following [paper](https://arxiv.org/abs/2209.08723):
+
+```
+@inproceedings{hussaini2023ensembles,
+  title={Ensembles of compact, region-specific \& regularized spiking neural networks for scalable place recognition},
+  author={Hussaini, Somayeh and Milford, Michael and Fischer, Tobias},
+  booktitle={2023 IEEE International Conference on Robotics and Automation (ICRA)},
+  pages={4200--4207},
+  year={2023},
+  organization={IEEE}
+}
+```
+
+If you use our Non-modular SNN code, please cite the following [paper](https://arxiv.org/abs/2109.06452):
 
 
 ```
@@ -40,8 +56,14 @@ If you use our non-modular SNN code, please cite our [paper](https://arxiv.org/a
 
 
 ## Overview
-Please refer to the readme files of the [Modular SNN](https://github.com/QVPR/VPRSNN/blob/modularSNN/modular_snn/README.md) and [Non-modular SNN](https://github.com/QVPR/VPRSNN/blob/modularSNN/non_modular_snn/README.md) folders for instructions to run the code for modular SNN and non-modular SNN works respectively. 
+Please refer to the readme files of the [Modular SNN](https://github.com/QVPR/VPRSNN/blob/main/modular_snn/README.md) and [Non-modular SNN](https://github.com/QVPR/VPRSNN/blob/main/non_modular_snn/README.md) folders for instructions to run the code for Modular SNN and Non-modular SNN works respectively. 
 
+
+## Applications of Spiking Neural Networks in Visual Place Recognition (Ensemble of Modular SNNs with/without sequence matching)
+
+<p style="width: 50%; display: block; margin-left: auto; margin-right: auto">
+  <img src="./resources/Ens_of_modularSNNs.png" alt="Ensemble of Modular SNNs with/without sequence matching"/>
+</p>
 
 ## Modular SNNs for scalable place recognition (Modular SNN)
 
@@ -52,7 +74,7 @@ Video: https://www.youtube.com/watch?v=TNDdfmPSe1U&t=137s
 </p>
 
 
-## SNNs for VPR (non-modular SNN)
+## SNNs for VPR (Non-modular SNN)
 
 Video: https://www.youtube.com/watch?v=VGfv4ZVOMkw
 
