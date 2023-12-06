@@ -707,7 +707,7 @@ if __name__ == "__main__":
     parser.add_argument('--threshold_i', type=int, default=0, 
                         help='Threshold value used to ignore the hyperactive neurons.')
     parser.add_argument('--seed', type=int, default=0, 
-                        help='Set seed for random generator.')
+                        help='Set seed for random generator to define the shuffled order of input images, and random initialisation of learned weights.')
 
     parser.add_argument('--ad_path_test', type=str, default="_test_E{}", 
                         help='Additional string arguments to use for saving test outputs in testing')
@@ -715,7 +715,7 @@ if __name__ == "__main__":
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}") 
 
     parser.add_argument('--process_mode', type=str, choices=["train", "record", "calibrate", "test"], default="test", 
-                        help='String indicator to define the mode (train, test).')
+                        help='String indicator to define the mode (train, record, calibrate, test).')
 
     parser.set_defaults()
     args = parser.parse_args()

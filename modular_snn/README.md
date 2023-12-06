@@ -81,9 +81,10 @@ The scripts [`modular_snn/modular_snn_processing.py`](https://github.com/QVPR/VP
 1. Run `modular_snn/modular_snn_processing.py` with `args.process_mode="train"` to individually:
 
     * Process training all modules of the network on geographically non-overlapping regions of the reference dataset. 
-    * Record the responses of all trained modules to the entire reference images (used by all modules) after training (for hyperactive neuron detection)
-    * Calibrate the calibration modules of the network using a geographically separate set of query images from the test set.  
-        * Run `modular_snn/modular_snn_evaluation.py` with `args.process_mode = "calibrate"` to evaluate the performance of the calibration modules using a range of threshold values to detect and then remove the hyperactive neurons. Select the best-performing threshold for testing. 
+    * Record the responses of all trained modules to the entire reference images (used by all modules) after training (for hyperactive neuron detection). Process mode is set to record once the training is finished, `args.process_mode="record"`.
+    * Calibrate the calibration modules of the network using a geographically separate set of query images from the test set. Process mode is set to calibrate after the record process is finished, `args.process_mode="calibrate"`.   
+  
+2. Run `modular_snn/modular_snn_evaluation.py` with `args.process_mode = "calibrate"` to evaluate the performance of the calibration modules using a range of threshold values to detect and then remove the hyperactive neurons. Select the best-performing threshold for testing. 
 
 
 Train the modular SNN with the default configs locally: 
@@ -94,7 +95,9 @@ python modular_snn/modular_snn_processing.py --run_mode="local" --process_mode="
 
 Notes:
 
-* Setting the `args.process_mode="train"` will also automatically performs the record and calibrate processes after the training is finished. 
+* Setting the `args.process_mode="train"` will also automatically perform the record and calibrate processes after the training is finished. 
+* The record process record the activity of the neurons which is used in the calibration and test processes of Modular SNN to detect the hyperactive neurons, done in `modular_snn/modular_snn_evaluation.py`.
+* The calibration process evaluates the performance of Modular SNN on the calibration data using a range of values for the hyperparameters. The hyperparameter, epochs, related to train process is defined in `modular_snn/one_modular_snn_processing.py`. The hyperparameter, threshold, that is used for hyperactive neuron detection, is defined in `modular_snn/modular_snn_evaluation.py`. 
 * Set `args.run_mode` to one of the available choices `["local", "wandb_local", "wandb_hpc"]` to either process the modules locally (sequential), locally using wandb tool, or on a high performance computing (hpc) platform using wandb tool. 
 
 

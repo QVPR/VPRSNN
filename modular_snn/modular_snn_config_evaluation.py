@@ -49,7 +49,7 @@ from non_modular_snn.snn_model_evaluation import (get_accuracy,
                                     compute_distance_matrix, 
                                     plot_precision_recall)
 
-from process_ensembles import get_unshuffled_results
+from ens_seq.process_ensembles import get_unshuffled_results
 from tools.logger import Logger
 matplotlib.rcParams['ps.fonttype'] = 42
 
@@ -58,6 +58,7 @@ matplotlib.rcParams['ps.fonttype'] = 42
 
 def main(args): 
 
+    # define the range of the hyperparameter, epochs, to evaluate for calibration.
     epoch_step = 10
     epoch_list = np.arange(epoch_step, args.epochs, epoch_step) if args.process_mode == "calibrate" else [args.epochs]
     print(epoch_list)
@@ -76,7 +77,6 @@ def process(args):
     use_precomputed = False 
     
     merged_path = './outputs/outputs_ne{}_L{}'
-    indices_path = "shuffled_indices_L{}_S{}.npy"
     assignment_types = ["standard", "weighted"]   
     NA_name = assignment_types[args.use_weighted_assignments] 
     
@@ -187,8 +187,11 @@ def process(args):
     print("summed_rates shape: {}".format(summed_rates.shape))
     print("test_labels shape: {}".format(np.array(test_labels).shape))
     
-    if os.path.isfile(indices_path.format(args.num_query_imgs, args.seed)):
-        shuffled_indices = np.load(indices_path.format(args.num_query_imgs, args.seed) )
+    shuffled_indices_path = f"shuffled_indices_L{args.num_query_imgs}_S{args.seed}.npy"
+    if args.shuffled:
+        if not os.path.isfile(shuffled_indices_path):
+            assert f"Shuffled indices file not found! {shuffled_indices_path}"
+        shuffled_indices = np.load(shuffled_indices_path)
         summed_rates = get_unshuffled_results(summed_rates, shuffled_indices, args.num_cal_labels, args.process_mode)
         
     # Invert the scale of the distance matrix 
@@ -274,7 +277,9 @@ if __name__ == "__main__":
     parser.add_argument('--num_test_labels', type=int, default=5, 
                         help='Number of testing place labels.')
     parser.add_argument('--use_weighted_assignments', type=bool, default=False, 
-                        help='Value to define the type of neuronal assignment to use: standard=False, weighted=True') 
+                        help='Value to define the type of neuronal assignment to use: standard=False, weighted=True')
+    parser.add_argument('--shuffled', type=bool, default=True, 
+                        help='Value to define whether the order of input images should be shuffled: shuffled order of images=True, consecutive image order=False') 
     
     parser.add_argument('--skip', type=int, default=8, 
                         help='The number of images to skip between each place label.')
@@ -292,7 +297,7 @@ if __name__ == "__main__":
     parser.add_argument('--threshold_i', type=int, default=0, 
                         help='Threshold value used to ignore the hyperactive neurons.')
     parser.add_argument('--seed', type=int, default=0, 
-                        help='Set seed for random generator.')
+                        help='Set seed for random generator to define the shuffled order of input images, and random initialisation of learned weights.')
     
     parser.add_argument('--ad_path', type=str, default="_offset{}_S{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}")  

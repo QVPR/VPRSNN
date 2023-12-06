@@ -50,14 +50,8 @@ def get_shuffled_indices(num_test_labels, num_cal_labels, shuffled=True, seed=0)
     
     if not shuffled:
         indices = np.arange(num_test_labels)
-        np.save(shuffled_data_filename, indices) 
         return indices # np.array([]) 
-    
-    
-    if os.path.exists(shuffled_data_filename):
-        shuffled_indices = np.load(shuffled_data_filename)
-        return shuffled_indices 
-    
+
     # use the same images for calibration across all modules 
     np.random.seed(seed=42)
     shuffled_indices_cal = np.random.permutation(num_test_labels)
