@@ -34,7 +34,6 @@ import numpy as np
 import seaborn as sn
 from sklearn.metrics import auc
 
-
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
@@ -145,6 +144,13 @@ def main(args):
 
     np.save(data_path + "summed_rates_" + path_id, summed_rates)
     
+    shuffled_indices_path = f"shuffled_indices_L{args.num_query_imgs}_S{args.seed}.npy"
+    if args.shuffled:
+        if not os.path.isfile(shuffled_indices_path):
+            assert f"Shuffled indices file not found! {shuffled_indices_path}"
+        shuffled_indices = np.load(shuffled_indices_path)
+        summed_rates = get_unshuffled_results(summed_rates, shuffled_indices, args.num_cal_labels, args.process_mode)
+        
     start_idx = max((args.offset_after_skip-args.num_cal_labels), 0)
     end_idx = max((args.offset_after_skip-args.num_cal_labels)+args.num_labels, args.num_labels)
     difference = test_results[0, start_idx : end_idx] - testing_input_numbers[start_idx : end_idx]
@@ -539,7 +545,18 @@ def invert_dMat(dMat):
     
     inverted_dMat = max_dMat - dMat
     
-    return inverted_dMat 
+    return inverted_dMat
+
+
+def get_unshuffled_results(summed_rates_i, shuffled_indices, num_cal_labels, process_mode="test"):
+        
+    test_shuffled_indices = shuffled_indices[num_cal_labels:] if process_mode == "test" else shuffled_indices[:num_cal_labels]
+    sorted_indices = np.argsort(test_shuffled_indices)
+    
+    summed_rates_i = summed_rates_i[sorted_indices, :]
+    summed_rates_i = summed_rates_i[:, sorted_indices]
+    
+    return summed_rates_i
 
                 
 
@@ -556,6 +573,8 @@ if __name__ == "__main__":
                         help="Number of calibration place labels.")
     parser.add_argument('--num_test_labels', type=int, default=5, 
                         help='Number of testing place labels.')
+    parser.add_argument('--num_query_imgs', type=int, default=5, 
+                        help='Number of entire testing images and calibration images.')
     parser.add_argument('--tc_ge', type=float, default=1.0, 
                         help='Time constant of conductance of excitatory synapses AeAi')
     parser.add_argument('--tc_gi', type=float, default=0.5, 

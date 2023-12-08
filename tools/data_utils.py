@@ -95,41 +95,40 @@ def get_filtered_imageNames(filtered_imageNames_path):
     return content
 
 
-def filter_frames(frames, labels, paths_used, type, shuffled_indices, imgLists, offset_after_skip, num_labels, num_test_labels):
+def segment_array(array, num_traverses, shuffled_indices, offset_after_skip, num_labels):
     
-    # shuffle data 
-    paths_used[:len(shuffled_indices)] = paths_used[shuffled_indices]
-    frames[:len(shuffled_indices)] = frames[shuffled_indices]
+    return np.concatenate([
+        array[i * len(shuffled_indices) + offset_after_skip : i * len(shuffled_indices) + offset_after_skip + num_labels]
+        for i in range(num_traverses)
+    ])
     
-    if len(imgLists) == 2:
-        paths_used[len(shuffled_indices):] = paths_used[len(shuffled_indices):][shuffled_indices]
-        frames[len(shuffled_indices):] = frames[len(shuffled_indices):][shuffled_indices]
+
+def shuffle_and_segment_frames(frames, labels, paths_used, shuffled_indices, offset_after_skip, num_labels, num_test_labels, is_training=True):
     
-    if type == "train":
-        
-        # extract training data 
-        training_indices = np.arange(offset_after_skip, offset_after_skip+num_labels)
-        
-        paths_used_filtered = paths_used[training_indices]
-        frames_filtered = frames[training_indices]
-        labels_filtered = labels[training_indices]
-        
-        if len(imgLists) == 2:
-            paths_used_filtered = np.append(paths_used_filtered, paths_used[len(shuffled_indices):][training_indices])
-            frames_filtered = np.append(frames_filtered, frames[len(shuffled_indices):][training_indices], axis=0)
-            labels_filtered = np.append(labels_filtered, labels[len(shuffled_indices):][training_indices])
-            
-        paths_used = paths_used_filtered
-        frames = frames_filtered
-        labels = labels_filtered
-    
-    elif type == "test":
-        
-        paths_used = paths_used[offset_after_skip:offset_after_skip+num_test_labels]
-        frames = frames[offset_after_skip:offset_after_skip+num_test_labels]
-        labels = labels[offset_after_skip:offset_after_skip+num_test_labels]
-        
-    return frames, labels, paths_used 
+    # shuffle data based on shuffled_indices
+    num_traverses = int(len(frames) / len(shuffled_indices))
+    shuffled_frames = np.empty_like(frames)
+    shuffled_paths_used = np.empty_like(paths_used)
+
+    for i in range(num_traverses):
+        start_idx = i * len(shuffled_indices)
+        end_idx = start_idx + len(shuffled_indices)
+        shuffled_frames[start_idx:end_idx] = frames[start_idx:end_idx][shuffled_indices]
+        shuffled_paths_used[start_idx:end_idx] = paths_used[start_idx:end_idx][shuffled_indices]
+
+    # extract training data
+    if is_training:
+        segmented_frames = segment_array(shuffled_frames, num_traverses, shuffled_indices, offset_after_skip, num_labels)
+        segmented_labels = segment_array(labels, num_traverses, shuffled_indices, offset_after_skip, num_labels)
+        segmented_paths_used = segment_array(shuffled_paths_used, num_traverses, shuffled_indices, offset_after_skip, num_labels)
+
+    # extract test data
+    else:
+        segmented_frames = shuffled_frames[offset_after_skip : offset_after_skip + num_test_labels]
+        segmented_labels = labels[offset_after_skip:offset_after_skip+num_test_labels]
+        segmented_paths_used = shuffled_paths_used[offset_after_skip:offset_after_skip+num_test_labels]
+
+    return segmented_frames, segmented_labels, segmented_paths_used
 
 
 def processImageDataset(path, type, imWidth, imHeight, num_patches=7, num_labels=25, num_test_labels=2700, num_query_imgs=3300, skip=0, offset_after_skip=0, shuffled_indices=[]):
@@ -185,10 +184,15 @@ def processImageDataset(path, type, imWidth, imHeight, num_patches=7, num_labels
             ii += 1
             kk += 1 
             
+    frames = np.array(frames)
+    labels = np.array(labels)
+    paths_used = np.array(paths_used)
+    
     if shuffled_indices.any(): 
         # All data is loaded, now extract the relevant frames and labels
-        frames, labels, paths_used = filter_frames(np.array(frames), np.array(labels), np.array(paths_used), type, shuffled_indices, imgLists, offset_after_skip, num_labels, num_test_labels)
-    
+        is_training = True if type == "train" else False
+        frames, labels, paths_used = shuffle_and_segment_frames(frames, labels, paths_used, shuffled_indices, offset_after_skip, num_labels, num_test_labels, is_training=is_training)
+        
     print("indices used in {}:\n{}".format(type, paths_used))
     print("labels used in {}:\n{}".format(type, labels))
 

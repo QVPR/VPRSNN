@@ -36,8 +36,8 @@ sys.path.append(parent_dir)
 
 
 from tools.logger import Logger
-from non_modular_snn.snn_model_evaluation import (compute_recall, invert_dMat)
-from ens_seq.process_ensembles import get_pred_results, get_unshuffled_results
+from non_modular_snn.snn_model_evaluation import (compute_recall, invert_dMat, get_unshuffled_results)
+from ens_seq.process_ensembles import get_pred_results
 
 
 

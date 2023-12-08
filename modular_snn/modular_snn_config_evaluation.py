@@ -47,9 +47,9 @@ from non_modular_snn.snn_model_evaluation import (get_accuracy,
                                     compute_recall, invert_dMat,
                                     compute_binary_distance_matrix, 
                                     compute_distance_matrix, 
-                                    plot_precision_recall)
+                                    plot_precision_recall, 
+                                    get_unshuffled_results)
 
-from ens_seq.process_ensembles import get_unshuffled_results
 from tools.logger import Logger
 matplotlib.rcParams['ps.fonttype'] = 42
 
@@ -276,6 +276,8 @@ if __name__ == "__main__":
                         help='Number of training place labels for a single module.')
     parser.add_argument('--num_test_labels', type=int, default=5, 
                         help='Number of testing place labels.')
+    parser.add_argument('--num_query_imgs', type=int, default=15, 
+                        help='Number of entire testing images and calibration images.')
     parser.add_argument('--use_weighted_assignments', type=bool, default=False, 
                         help='Value to define the type of neuronal assignment to use: standard=False, weighted=True')
     parser.add_argument('--shuffled', type=bool, default=True, 
@@ -287,8 +289,6 @@ if __name__ == "__main__":
                         help='The offset to apply for selecting places after skipping every n images.')
     parser.add_argument('--folder_id', type=str, default="NRD_SFS", 
                         help='Id to distinguish the traverses used from the dataset.')
-    parser.add_argument('--num_query_imgs', type=int, default=15, 
-                        help='Number of entire testing images and calibration images.')
     
     parser.add_argument('--epochs', type=int, default=20, 
                         help='Number of passes through the dataset.')

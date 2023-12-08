@@ -34,7 +34,7 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 from tools.logger import Logger
-from non_modular_snn.snn_model_evaluation import compute_recall, invert_dMat 
+from non_modular_snn.snn_model_evaluation import compute_recall, get_unshuffled_results, invert_dMat 
 
 
 
@@ -74,8 +74,9 @@ def main(args):
         compute_recall(gt_labels, test_results, numQ, n_values, data_path, name=f"recallAtN_SNN{args.seeds[i]}_SL1")
         
     print("Ensembling...")
-    summed_rates_all = np.array(summed_rates_all)
-    summed_rates_i = np.sum(summed_rates_all, axis=0)
+    # Sum the similarity matrices of all ensemble members to produce the ensemble similarity matrix
+    # summed_rates_all shape: (num_ensemble_members, num_reference_images, num_query_images)
+    summed_rates_i = np.sum(np.array(summed_rates_all), axis=0)
     np.save(os.path.join(data_path, "ensemble_summed_rates.npy"), summed_rates_i)
     
     rates_matrix = invert_dMat(summed_rates_i)
@@ -86,17 +87,6 @@ def main(args):
     
     print("done")
     return 
-
-
-def get_unshuffled_results(summed_rates_i, shuffled_indices, num_cal_labels, process_mode="test"):
-        
-    test_shuffled_indices = shuffled_indices[num_cal_labels:] if process_mode == "test" else shuffled_indices[:num_cal_labels]
-    sorted_indices = np.argsort(test_shuffled_indices)
-    
-    summed_rates_i = summed_rates_i[sorted_indices, :]
-    summed_rates_i = summed_rates_i[:, sorted_indices]
-    
-    return summed_rates_i
 
 
 def get_pred_results(summed_rates_i):
