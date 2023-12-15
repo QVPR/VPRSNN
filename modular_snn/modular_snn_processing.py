@@ -43,13 +43,28 @@ from tools.wandb_utils import create_hpc_bashscript_wandb, get_wandb_sweep_id, s
 
 '''
 To submit the jobs on hpc, simply:
-- conda activate vprsnn
-- python modular_snn/modular_snn_processing.py or
-- python modular_snn/modular_snn_processing.py --run_mode="local" --process_mode="train" --dataset='nordland' --num_labels=5 --num_cal_labels=5 --num_test_labels=20 --offset_after_skip=0 --folder_id='NRD_SFS' --epochs=20
-- python modular_snn/modular_snn_processing.py --project_name="VPRSNN_0" --username="username" --sweep_name="sweep_1" --run_mode="hpc" --process_mode="train" --dataset='nordland' --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --skip=8 --offset_after_skip=0 --update_interval=250 --folder_id='NRD_SFS' --n_e=400 --epochs=60
-- python modular_snn/modular_snn_processing.py --project_name="VPRSNN_0" --username="username" --sweep_name="sweep_1" --run_mode="hpc" --process_mode="test" --dataset='nordland' --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --skip=8 --offset_after_skip=0 --update_interval=250 --folder_id='NRD_SFS' --n_e=400 --epochs=60
-- python modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="train" --dataset='nordland' --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --skip=8 --offset_after_skip=0 --update_interval=250 --folder_id='NRD_SFS' --n_e=400 --epochs=60 
-- python modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="test" --dataset='nordland' --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --skip=8 --offset_after_skip=600 --update_interval=250 --folder_id='NRD_SFS' --n_e=400 --epochs=60 
+- conda activate vprsnn 
+- python modular_snn/modular_snn_processing.py --project_name="VPRSNN_0" --username="username" --sweep_name="sweep_1" --run_mode="hpc" --process_mode="train" --dataset='nordland' --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --num_query_imgs=3300 --skip=8 --offset_after_skip=0 --update_interval=250 --folder_id='NRD_SFS' --n_e=400 --epochs=60 --seed=0
+- python modular_snn/modular_snn_processing.py --project_name="VPRSNN_0" --username="username" --sweep_name="sweep_1" --run_mode="hpc" --process_mode="test" --dataset='nordland' --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --num_query_imgs=3300 --skip=8 --offset_after_skip=0 --update_interval=250 --folder_id='NRD_SFS' --n_e=400 --epochs=60 --seed=0
+
+_1: python3 modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="train" --dataset='nordland' --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --num_query_imgs=3300 --skip=8 --offset_after_skip=0 --update_interval=250 --folder_id='NRD_SFS' --n_e=400 --epochs=80 --seed=0 
+_1: python3 modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="test" --dataset='nordland' --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --num_query_imgs=3300 --skip=8 --offset_after_skip=600 --update_interval=250 --folder_id='NRD_SFS' --n_e=400 --epochs=60 --seed=0 
+
+_2: python3 modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="train" --dataset='nordland' --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --num_query_imgs=3300 --skip=8 --offset_after_skip=0 --update_interval=250 --folder_id='NRD_SFW' --n_e=400 --epochs=200 --seed=0 
+_2: python3 modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="test" --dataset='nordland' --num_labels=25 --num_cal_labels=600 --num_test_labels=2700 --num_query_imgs=3300 --skip=8 --offset_after_skip=600 --update_interval=250 --folder_id='NRD_SFW' --n_e=400 --epochs=60 --seed=0 
+
+_3: python3 modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="train" --dataset='ORC' --num_labels=25 --num_cal_labels=75 --num_test_labels=375 --num_query_imgs=450 --skip=8 --offset_after_skip=0 --update_interval=250 --folder_id='ORC' --n_e=400 --epochs=200 --seed=0 
+_3: python3 modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="test" --dataset='ORC' --num_labels=25 --num_cal_labels=75 --num_test_labels=375 --num_query_imgs=450 --skip=8 --offset_after_skip=75 --update_interval=250 --folder_id='ORC' --n_e=400 --epochs=60 --seed=0 
+
+_4: python3 modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="train" --dataset='SFU-Mountain' --num_labels=25 --num_cal_labels=75 --num_test_labels=300 --num_query_imgs=375 --skip=1 --offset_after_skip=0 --update_interval=250 --folder_id='SFU-Mountain' --n_e=400 --epochs=200 --seed=0 
+_4: python3 modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="test" --dataset='SFU-Mountain' --num_labels=25 --num_cal_labels=75 --num_test_labels=300 --num_query_imgs=375 --skip=1 --offset_after_skip=75 --update_interval=250 --folder_id='SFU-Mountain' --n_e=400 --epochs=10 --seed=0 
+
+_5: python3 modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="train" --dataset='Synthia-NightToFall' --num_labels=25 --num_cal_labels=50 --num_test_labels=225 --num_query_imgs=275 --skip=1 --offset_after_skip=0 --update_interval=250 --folder_id='Synthia-NightToFall' --n_e=400 --epochs=200 --seed=0
+_5: python3 modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="test" --dataset='Synthia-NightToFall' --num_labels=25 --num_cal_labels=50 --num_test_labels=225 --num_query_imgs=275 --skip=1 --offset_after_skip=50 --update_interval=250 --folder_id='Synthia-NightToFall' --n_e=400 --epochs=20 --seed=0
+
+_6: python3 modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="train" --dataset='St-Lucia' --num_labels=25 --num_cal_labels=50 --num_test_labels=300 --num_query_imgs=350 --skip=1 --offset_after_skip=0 --update_interval=250 --folder_id='St-Lucia' --n_e=400 --epochs=200 --seed=0
+_6: python3 modular_snn/modular_snn_processing.py --run_mode="wandb_hpc" --process_mode="test" --dataset='St-Lucia' --num_labels=25 --num_cal_labels=50 --num_test_labels=300 --num_query_imgs=350 --skip=1 --offset_after_skip=50 --update_interval=250 --folder_id='St-Lucia' --n_e=400 --epochs=60 --seed=0
+
 
 
 '''
@@ -120,6 +135,8 @@ if __name__ == "__main__":
                         help="Number of calibration place labels.")
     parser.add_argument('--num_test_labels', type=int, default=15, 
                         help='Number of testing place labels.')
+    parser.add_argument('--num_query_imgs', type=int, default=5, 
+                        help='Number of query images used for testing and calibration.')
     parser.add_argument('--tc_ge', type=float, default=1.0, 
                         help='Time constant of conductance of excitatory synapses AeAi')
     parser.add_argument('--tc_gi', type=float, default=0.5, 
@@ -128,6 +145,8 @@ if __name__ == "__main__":
                         help="Intensity scaling factor to change the range of input pixel values")
     parser.add_argument('--use_weighted_assignments', type=bool, default=False, 
                         help='Value to define the type of neuronal assignment to use: standard=False, weighted=True')
+    parser.add_argument('--shuffled', type=bool, default=True, 
+                        help='Value to define whether the order of input images should be shuffled: shuffled order of images=True, consecutive image order=False') 
 
     parser.add_argument('--skip', type=int, default=8, 
                         help='The number of images to skip between each place label.')
@@ -143,10 +162,12 @@ if __name__ == "__main__":
                         help='Number of excitatory output neurons. The number of inhibitory neurons are defined the same.')
     parser.add_argument('--threshold_i', type=int, default=0, 
                         help='Threshold value used to ignore the hyperactive neurons.')
+    parser.add_argument('--seed', type=int, default=0, 
+                        help='Set seed for random generator to define the shuffled order of input images, and random initialisation of learned weights.')
 
     parser.add_argument('--ad_path_test', type=str, default="_test_E{}", 
                         help='Additional string arguments to use for saving test outputs in testing')
-    parser.add_argument('--ad_path', type=str, default="_offset{}")             
+    parser.add_argument('--ad_path', type=str, default="_offset{}_S{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}")   
     
     parser.add_argument('--process_mode', type=str, choices=["train", "record", "calibrate", "test"], default="train", 

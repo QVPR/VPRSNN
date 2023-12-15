@@ -40,7 +40,7 @@ sys.path.append(parent_dir)
 
 
 from tools.logger import Logger
-from tools.data_utils import get_train_test_datapath, processImageDataset
+from tools.data_utils import get_train_test_imagenames_path, processImageDataset
 import tools.snn_model_utils as snn_model_class
 from non_modular_snn.snn_model_evaluation import get_new_assignments, get_recognized_number_ranking
 from tools.snn_model_plot import plot_rateMonitors, plot_spikeMonitors, plot_spikeMonitorsCount
@@ -79,9 +79,7 @@ def main(args):
     sys.stdout = Logger(outputsPath, logfile_name)
     print(args)
 
-    org_data_path = ['./../data/{}/'.format(args.dataset)]  
-
-    train_data_path, test_data_path = get_train_test_datapath(org_data_path)
+    train_data_path, test_data_path = get_train_test_imagenames_path(args.dataset, args.folder_id)
 
     ad_path_test = args.ad_path_test if test_mode else ""
     skip = args.skip
@@ -98,14 +96,21 @@ def main(args):
     num_patches = 7
     min_num_spikes = 1
 
-    np.random.seed(0)
+    np.random.seed(args.seed)
+    b2.seed(args.seed)
+    
+    shuffled_indices = snn_model_class.get_shuffled_indices(args.num_query_imgs, args.num_cal_labels, shuffled=args.shuffled, seed=args.seed)   
 
     if not test_mode:
-        training_data = processImageDataset(train_data_path, "train", imWidth, imHeight, num_patches, args.num_labels, skip, args.offset_after_skip)
+        training_data = processImageDataset(train_data_path, "train", imWidth, imHeight, num_patches, num_labels=args.num_labels, 
+                                            num_test_labels=args.num_test_labels, num_query_imgs=args.num_query_imgs, skip=args.skip, 
+                                            offset_after_skip=args.offset_after_skip, shuffled_indices=shuffled_indices)
         print("\nTraining labels:\n{}\n".format(training_data['y'].flatten()))
     
     else:
-        testing_data = processImageDataset(test_data_path, "test", imWidth, imHeight, num_patches, num_labels=args.num_test_labels, skip=skip, offset_after_skip=args.offset_after_skip) 
+        testing_data = processImageDataset(test_data_path, "test", imWidth, imHeight, num_patches, num_labels=args.num_labels, 
+                                           num_test_labels=args.num_test_labels, num_query_imgs=args.num_query_imgs, skip=skip, 
+                                           offset_after_skip=args.offset_after_skip, shuffled_indices=shuffled_indices) 
         print("\nTesting labels:\n{}\n".format(testing_data['y'].flatten() ))
 
     num_training_imgs = len(train_data_path)*args.num_labels
@@ -674,6 +679,8 @@ if __name__ == "__main__":
                         help="Number of calibration place labels.")
     parser.add_argument('--num_test_labels', type=int, default=5, 
                         help='Number of testing place labels.')
+    parser.add_argument('--num_query_imgs', type=int, default=5, 
+                        help='Number of query images used for testing and calibration.')
     parser.add_argument('--tc_ge', type=float, default=1.0, 
                         help='Time constant of conductance of excitatory synapses AeAi')
     parser.add_argument('--tc_gi', type=float, default=0.5, 
@@ -682,6 +689,8 @@ if __name__ == "__main__":
                         help="Intensity scaling factor to change the range of input pixel values")
     parser.add_argument('--use_weighted_assignments', type=bool, default=False, 
                         help='Value to define the type of neuronal assignment to use: standard=False, weighted=True')
+    parser.add_argument('--shuffled', type=bool, default=True, 
+                        help='Value to define whether the order of input images should be shuffled: shuffled order of images=True, consecutive image order=False')
     
     parser.add_argument('--skip', type=int, default=8, 
                         help='The number of images to skip between each place label.')
@@ -697,14 +706,16 @@ if __name__ == "__main__":
                         help='Number of excitatory output neurons. The number of inhibitory neurons are defined the same.')
     parser.add_argument('--threshold_i', type=int, default=0, 
                         help='Threshold value used to ignore the hyperactive neurons.')
+    parser.add_argument('--seed', type=int, default=0, 
+                        help='Set seed for random generator to define the shuffled order of input images, and random initialisation of learned weights.')
 
     parser.add_argument('--ad_path_test', type=str, default="_test_E{}", 
                         help='Additional string arguments to use for saving test outputs in testing')
-    parser.add_argument('--ad_path', type=str, default="_offset{}")             
+    parser.add_argument('--ad_path', type=str, default="_offset{}_S{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}") 
 
-    parser.add_argument('--process_mode', type=str, choices=["train", "test"], default="test", 
-                        help='String indicator to define the mode (train, test).')
+    parser.add_argument('--process_mode', type=str, choices=["train", "record", "calibrate", "test"], default="test", 
+                        help='String indicator to define the mode (train, record, calibrate, test).')
 
     parser.set_defaults()
     args = parser.parse_args()

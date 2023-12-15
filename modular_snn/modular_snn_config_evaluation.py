@@ -47,7 +47,8 @@ from non_modular_snn.snn_model_evaluation import (get_accuracy,
                                     compute_recall, invert_dMat,
                                     compute_binary_distance_matrix, 
                                     compute_distance_matrix, 
-                                    plot_precision_recall)
+                                    plot_precision_recall, 
+                                    get_unshuffled_results)
 
 from tools.logger import Logger
 matplotlib.rcParams['ps.fonttype'] = 42
@@ -56,6 +57,22 @@ matplotlib.rcParams['ps.fonttype'] = 42
 
 
 def main(args): 
+
+    # define the range of the hyperparameter, epochs, to evaluate for calibration.
+    epoch_step = 10
+    epoch_list = np.arange(epoch_step, args.epochs, epoch_step) if args.process_mode == "calibrate" else [args.epochs]
+    print(epoch_list)
+
+    args_multi_path_base = args.multi_path
+    
+    for epoch in epoch_list:
+        args.epochs = epoch
+        args.multi_path = args_multi_path_base.format(args.epochs, args.num_query_imgs, args.threshold_i)
+        
+        process(args)
+        
+        
+def process(args):
     
     use_precomputed = False 
     
@@ -77,13 +94,13 @@ def main(args):
 
     for offset_after_skip in offset_after_skip_list:
         
-        results_path = './outputs/outputs_ne{}_L{}'.format(args.n_e, args.num_labels) + args.ad_path.format(offset_after_skip) + '/'        
+        results_path = f'./outputs/outputs_ne{args.n_e}_L{args.num_labels}' + args.ad_path.format(offset_after_skip) + '/'        
         data_path =  results_path + NA_name + "/" + args.multi_path + "/" 
         
-        validation_result_filename = results_path + "resultPopVecs{}.npy".format(args.num_query_imgs)
-        testing_result_filename = results_path + "resultPopVecs{}_test_E{}.npy".format(args.num_test_labels, args.epochs)
-        print("Validation result monitor (available = {}): {}".format(os.path.isfile(validation_result_filename), validation_result_filename) )
-        print("Testing result monitor (available = {}): {}".format(os.path.isfile(testing_result_filename), testing_result_filename) )
+        validation_result_filename = results_path + f"resultPopVecs{args.num_query_imgs}_record_E{args.epochs}.npy"
+        testing_result_filename = results_path + f"resultPopVecs{args.num_test_labels}_test_E{args.epochs}.npy"
+        print(f"Validation result monitor (available = {os.path.isfile(validation_result_filename)}): {validation_result_filename}" )
+        print(f"Testing result monitor (available = {os.path.isfile(testing_result_filename)}): {testing_result_filename}" )
         validation_result_monitor.append(np.load(validation_result_filename))
         testing_result_monitor.append(np.load(testing_result_filename))
         
@@ -170,6 +187,13 @@ def main(args):
     print("summed_rates shape: {}".format(summed_rates.shape))
     print("test_labels shape: {}".format(np.array(test_labels).shape))
     
+    shuffled_indices_path = f"shuffled_indices_L{args.num_query_imgs}_S{args.seed}.npy"
+    if args.shuffled:
+        if not os.path.isfile(shuffled_indices_path):
+            assert f"Shuffled indices file not found! {shuffled_indices_path}"
+        shuffled_indices = np.load(shuffled_indices_path)
+        summed_rates = get_unshuffled_results(summed_rates, shuffled_indices, args.num_cal_labels, args.process_mode)
+        
     # Invert the scale of the distance matrix 
     rates_matrix = invert_dMat(summed_rates)
     sorted_pred_idx = np.argsort(rates_matrix, axis=0)
@@ -252,8 +276,12 @@ if __name__ == "__main__":
                         help='Number of training place labels for a single module.')
     parser.add_argument('--num_test_labels', type=int, default=5, 
                         help='Number of testing place labels.')
+    parser.add_argument('--num_query_imgs', type=int, default=15, 
+                        help='Number of entire testing images and calibration images.')
     parser.add_argument('--use_weighted_assignments', type=bool, default=False, 
-                        help='Value to define the type of neuronal assignment to use: standard=False, weighted=True') 
+                        help='Value to define the type of neuronal assignment to use: standard=False, weighted=True')
+    parser.add_argument('--shuffled', type=bool, default=True, 
+                        help='Value to define whether the order of input images should be shuffled: shuffled order of images=True, consecutive image order=False') 
     
     parser.add_argument('--skip', type=int, default=8, 
                         help='The number of images to skip between each place label.')
@@ -261,8 +289,6 @@ if __name__ == "__main__":
                         help='The offset to apply for selecting places after skipping every n images.')
     parser.add_argument('--folder_id', type=str, default="NRD_SFS", 
                         help='Id to distinguish the traverses used from the dataset.')
-    parser.add_argument('--num_query_imgs', type=int, default=15, 
-                        help='Number of entire testing images and calibration images.')
     
     parser.add_argument('--epochs', type=int, default=20, 
                         help='Number of passes through the dataset.')
@@ -270,8 +296,10 @@ if __name__ == "__main__":
                         help='Number of excitatory output neurons. The number of inhibitory neurons are defined the same.')
     parser.add_argument('--threshold_i', type=int, default=0, 
                         help='Threshold value used to ignore the hyperactive neurons.')
+    parser.add_argument('--seed', type=int, default=0, 
+                        help='Set seed for random generator to define the shuffled order of input images, and random initialisation of learned weights.')
     
-    parser.add_argument('--ad_path', type=str, default="_offset{}")             
+    parser.add_argument('--ad_path', type=str, default="_offset{}_S{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}")  
 
     parser.set_defaults()

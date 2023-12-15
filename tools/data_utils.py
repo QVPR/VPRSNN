@@ -85,32 +85,62 @@ def processImage(img, imWidth, imHeight, num_patches):
     return img
 
 
-def get_filtered_name_paths(filtered_names_path):
+def get_filtered_imageNames(filtered_imageNames_path):
 
-    assert os.path.isfile(filtered_names_path), "The file path {} is not a valid".format(filtered_names_path)
+    assert os.path.isfile(filtered_imageNames_path), "The file path {} is not a valid".format(filtered_imageNames_path)
 
-    with open(filtered_names_path) as f:
+    with open(filtered_imageNames_path) as f:
         content = f.read().splitlines()
-        
-    filtered_index = [int(''.join(x for x in char if x.isdigit())) for char in content] 
-
-    return filtered_index
+    
+    return content
 
 
-def processImageDataset(path, type, imWidth, imHeight, num_patches=7, num_labels=100, skip=0, offset_after_skip=0):
+def segment_array(array, num_traverses, shuffled_indices, offset_after_skip, num_labels):
+    
+    return np.concatenate([
+        array[i * len(shuffled_indices) + offset_after_skip : i * len(shuffled_indices) + offset_after_skip + num_labels]
+        for i in range(num_traverses)
+    ])
+    
 
-    print("Computing features for image path: {} ...\n".format(path))
+def shuffle_and_segment_frames(frames, labels, paths_used, shuffled_indices, offset_after_skip, num_labels, num_test_labels, is_training=True):
+    
+    # shuffle data based on shuffled_indices
+    num_traverses = int(len(frames) / len(shuffled_indices))
+    shuffled_frames = np.empty_like(frames)
+    shuffled_paths_used = np.empty_like(paths_used)
 
+    for i in range(num_traverses):
+        start_idx = i * len(shuffled_indices)
+        end_idx = start_idx + len(shuffled_indices)
+        shuffled_frames[start_idx:end_idx] = frames[start_idx:end_idx][shuffled_indices]
+        shuffled_paths_used[start_idx:end_idx] = paths_used[start_idx:end_idx][shuffled_indices]
+
+    # extract training data
+    if is_training:
+        segmented_frames = segment_array(shuffled_frames, num_traverses, shuffled_indices, offset_after_skip, num_labels)
+        segmented_labels = segment_array(labels, num_traverses, shuffled_indices, offset_after_skip, num_labels)
+        segmented_paths_used = segment_array(shuffled_paths_used, num_traverses, shuffled_indices, offset_after_skip, num_labels)
+
+    # extract test data
+    else:
+        segmented_frames = shuffled_frames[offset_after_skip : offset_after_skip + num_test_labels]
+        segmented_labels = labels[offset_after_skip:offset_after_skip+num_test_labels]
+        segmented_paths_used = shuffled_paths_used[offset_after_skip:offset_after_skip+num_test_labels]
+
+    return segmented_frames, segmented_labels, segmented_paths_used
+
+
+def processImageDataset(path, type, imWidth, imHeight, num_patches=7, num_labels=25, num_test_labels=2700, num_query_imgs=3300, skip=0, offset_after_skip=0, shuffled_indices=[]):
+
+    print("Computing features for image names in path(s): {} ...\n".format(path))
+
+    dataset_path = './../data'
     imgLists = []
+    
     for p in path: 
-        imgList = np.sort(os.listdir(p))
-        imgList = [os.path.join(p,f) for f in imgList]    
+        imgList = get_filtered_imageNames(p)  
         imgLists.append(imgList)
-
-    if "nordland" in path[0]:
-        dirPath = os.path.abspath(os.getcwd())
-        filtered_names_path = "{}/dataset_imagenames/nordland_imageNames.txt".format(dirPath)
-        filtered_index = get_filtered_name_paths(filtered_names_path)
 
     frames = []
     paths_used = [] 
@@ -118,54 +148,51 @@ def processImageDataset(path, type, imWidth, imHeight, num_patches=7, num_labels
 
     for imgList in imgLists: 
 
-        nordland = True if "nordland" in imgList[0] else False 
-
-        j = 0
         ii = 0  # keep count of number of images
         kk = 0  # keep track of image indices, considering offset after skip
 
         for i, imPath in enumerate(imgList):
             
-            if (ii == num_labels):
+            if (ii == num_query_imgs):
                 break 
 
             if ".jpg" not in imPath and ".png" not in imPath:
                 continue 
             
-            if nordland: 
-                if (i not in filtered_index):
-                    continue
-
-                if j % skip != 0:
-                    j += 1
-                    continue
-                j += 1
-            
-            if not nordland and (skip != 0 and i % skip != 0):  
+            if skip != 0 and i % skip != 0:  
                 continue
             
-            if (offset_after_skip > 0 and kk < offset_after_skip):
+            if not shuffled_indices.any() and (offset_after_skip > 0 and kk < offset_after_skip):
                 kk += 1
                 continue
             
-            frame = loadImg(imPath)
+            if shuffled_indices.any() and kk not in shuffled_indices:
+                kk += 1
+                continue
+            
+            frame = loadImg(os.path.join(dataset_path, imPath))
 
             frame = processImage(frame, imWidth, imHeight, num_patches)  
             frames.append(frame)
 
-            labels.append(kk)
+            labels.append(ii)
 
-            if nordland: 
-                idx = np.where(np.array(filtered_index) == i)[0][0]
-                path_id = filtered_index[idx]
-            else:
-                path_id = i
+            path_id = i
 
             paths_used.append(path_id)
 
             ii += 1
             kk += 1 
+            
+    frames = np.array(frames)
+    labels = np.array(labels)
+    paths_used = np.array(paths_used)
     
+    if shuffled_indices.any(): 
+        # All data is loaded, now extract the relevant frames and labels
+        is_training = True if type == "train" else False
+        frames, labels, paths_used = shuffle_and_segment_frames(frames, labels, paths_used, shuffled_indices, offset_after_skip, num_labels, num_test_labels, is_training=is_training)
+        
     print("indices used in {}:\n{}".format(type, paths_used))
     print("labels used in {}:\n{}".format(type, labels))
 
@@ -175,27 +202,31 @@ def processImageDataset(path, type, imWidth, imHeight, num_patches=7, num_labels
     return data
 
 
-def get_train_test_datapath(org_data_path):
+def get_train_test_imagenames_path(dataset, folder_id):
 
-    if './../data/nordland/' in org_data_path:
-        train_data_path = [org_data_path[0] + 'spring/', org_data_path[0] + 'fall/']  
-        test_data_path =  [org_data_path[0] + 'summer/']
+    if dataset == 'nordland':
+        if folder_id == "NRD_SFS":
+            train_data_path = [f'./dataset_imagenames/{dataset}_imageNames_spring.txt', f'./dataset_imagenames/{dataset}_imageNames_fall.txt']  
+            test_data_path =  [f'./dataset_imagenames/{dataset}_imageNames_summer.txt']
+        elif folder_id == "NRD_SFW":
+            train_data_path = [f'./dataset_imagenames/{dataset}_imageNames_spring.txt', f'./dataset_imagenames/{dataset}_imageNames_fall.txt']  
+            test_data_path =  [f'./dataset_imagenames/{dataset}_imageNames_winter.txt']
+            
+    elif dataset == 'ORC':
+        train_data_path = [f'./dataset_imagenames/{dataset}_imageNames_Sun.txt', f'./dataset_imagenames/{dataset}_imageNames_Rain.txt']
+        test_data_path =  [f'./dataset_imagenames/{dataset}_imageNames_Dusk.txt']
+        
+    elif dataset == 'SFU-Mountain':
+        train_data_path = [f'./dataset_imagenames/{dataset}_imageNames_dry.txt']
+        test_data_path = [f'./dataset_imagenames/{dataset}_imageNames_dusk.txt']
 
-    elif './../data/ORC/' in org_data_path:
-        train_data_path = [org_data_path[0] + 'Sun/', org_data_path[0] + 'Rain/']
-        test_data_path =  [org_data_path[0] + 'Dusk/']
-    
-    elif './../data/SPEDTEST/' in org_data_path:
-        train_data_path = [org_data_path[0] + "ref/"]
-        test_data_path = [org_data_path[0] + "query/"]
+    elif dataset == 'Synthia-NightToFall':
+        train_data_path = [f'./dataset_imagenames/{dataset}_imageNames_ref.txt']
+        test_data_path = [f'./dataset_imagenames/{dataset}_imageNames_query.txt']
 
-    elif './../data/Synthia-NightToFall/' in org_data_path:
-        train_data_path = [org_data_path[0] + "ref_modified/"]
-        test_data_path = [org_data_path[0] + "query_modified/"]
-
-    elif './../data/St-Lucia/' in org_data_path:
-        train_data_path = [org_data_path[0] + "ref/"]
-        test_data_path = [org_data_path[0] + "query/"]
+    elif dataset == 'St-Lucia':
+        train_data_path = [f'./dataset_imagenames/{dataset}_imageNames_190809_0845.txt']
+        test_data_path = [f'./dataset_imagenames/{dataset}_imageNames_180809_1545.txt']
 
     return train_data_path, test_data_path
 

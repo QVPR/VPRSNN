@@ -34,13 +34,12 @@ import numpy as np
 import seaborn as sn
 from sklearn.metrics import auc
 
-
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 
-from tools.data_utils import get_train_test_datapath
+from tools.data_utils import get_train_test_imagenames_path
 from tools.logger import Logger
 
 
@@ -53,9 +52,8 @@ def main(args):
 
     main_folder_path = data_path 
     Path(main_folder_path).mkdir(parents=True, exist_ok=True)
-    
-    org_data_path = ['./../data/{}/'.format(args.dataset)]  
-    train_data_path, test_data_path = get_train_test_datapath(org_data_path)
+
+    train_data_path, test_data_path = get_train_test_imagenames_path(args.dataset, args.folder_id)
 
     folder_id = args.folder_id 
     num_testing_imgs = args.num_test_labels   
@@ -146,6 +144,13 @@ def main(args):
 
     np.save(data_path + "summed_rates_" + path_id, summed_rates)
     
+    shuffled_indices_path = f"shuffled_indices_L{args.num_query_imgs}_S{args.seed}.npy"
+    if args.shuffled:
+        if not os.path.isfile(shuffled_indices_path):
+            assert f"Shuffled indices file not found! {shuffled_indices_path}"
+        shuffled_indices = np.load(shuffled_indices_path)
+        summed_rates = get_unshuffled_results(summed_rates, shuffled_indices, args.num_cal_labels, args.process_mode)
+        
     start_idx = max((args.offset_after_skip-args.num_cal_labels), 0)
     end_idx = max((args.offset_after_skip-args.num_cal_labels)+args.num_labels, args.num_labels)
     difference = test_results[0, start_idx : end_idx] - testing_input_numbers[start_idx : end_idx]
@@ -540,7 +545,18 @@ def invert_dMat(dMat):
     
     inverted_dMat = max_dMat - dMat
     
-    return inverted_dMat 
+    return inverted_dMat
+
+
+def get_unshuffled_results(summed_rates_i, shuffled_indices, num_cal_labels, process_mode="test"):
+        
+    test_shuffled_indices = shuffled_indices[num_cal_labels:] if process_mode == "test" else shuffled_indices[:num_cal_labels]
+    sorted_indices = np.argsort(test_shuffled_indices)
+    
+    summed_rates_i = summed_rates_i[sorted_indices, :]
+    summed_rates_i = summed_rates_i[:, sorted_indices]
+    
+    return summed_rates_i
 
                 
 
@@ -557,6 +573,8 @@ if __name__ == "__main__":
                         help="Number of calibration place labels.")
     parser.add_argument('--num_test_labels', type=int, default=5, 
                         help='Number of testing place labels.')
+    parser.add_argument('--num_query_imgs', type=int, default=5, 
+                        help='Number of entire testing images and calibration images.')
     parser.add_argument('--tc_ge', type=float, default=1.0, 
                         help='Time constant of conductance of excitatory synapses AeAi')
     parser.add_argument('--tc_gi', type=float, default=0.5, 
@@ -565,6 +583,8 @@ if __name__ == "__main__":
                         help="Intensity scaling factor to change the range of input pixel values")
     parser.add_argument('--use_weighted_assignments', type=bool, default=False, 
                         help='Value to define the type of neuronal assignment to use: standard=False, weighted=True')
+    parser.add_argument('--shuffled', type=bool, default=True, 
+                        help='Value to define whether the order of input images should be shuffled: shuffled order of images=True, consecutive image order=False') 
 
     parser.add_argument('--skip', type=int, default=8, 
                         help='The number of images to skip between each place label.')
@@ -580,10 +600,12 @@ if __name__ == "__main__":
                         help='Number of excitatory output neurons. The number of inhibitory neurons are defined the same.')
     parser.add_argument('--threshold_i', type=int, default=0, 
                         help='Threshold value used to ignore the hyperactive neurons.')
+    parser.add_argument('--seed', type=int, default=0, 
+                        help='Set seed for random generator to define the shuffled order of input images, and random initialisation of learned weights.')
 
     parser.add_argument('--ad_path_test', type=str, default="_test_E{}", 
                         help='Additional string arguments to use for saving test outputs in testing')
-    parser.add_argument('--ad_path', type=str, default="_offset{}")             
+    parser.add_argument('--ad_path', type=str, default="_offset{}_S{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}") 
 
     parser.add_argument('--process_mode', type=str, choices=["train", "test"], default="test", 

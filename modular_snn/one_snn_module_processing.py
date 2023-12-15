@@ -27,6 +27,7 @@ SOFTWARE.
 import argparse
 import os
 import sys
+import numpy as np
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -44,6 +45,11 @@ def main(args):
     
     num_test_labels_base = args.num_test_labels
     offset_after_skip_base = args.offset_after_skip
+    args_multi_path_base = args.multi_path
+    args_epochs_base = args.epochs
+    
+    # define the range of the hyperparameter, epochs, to evaluate for calibration. 
+    epoch_step = 10
     
     if args.process_mode == "test" and offset_after_skip_base >= args.num_cal_labels:
             
@@ -53,7 +59,7 @@ def main(args):
         snn_model_main(args)
         
         args.offset_after_skip = offset_after_skip_base
-        args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)
+        args.multi_path = args_multi_path_base.format(args.epochs, args.num_test_labels, args.threshold_i)
         evaluate_snn_module(args)
 
     
@@ -72,27 +78,39 @@ def main(args):
     
     if args.process_mode == "record":
         
-        # Run the python script - record 
-        args.ad_path_test = ""
-        args.num_test_labels = args.num_cal_labels + num_test_labels_base
-        args.offset_after_skip = 0
-        snn_model_main(args)
+        epoch_list = np.arange(epoch_step, args_epochs_base, epoch_step)
+        print(epoch_list)
+        
+        for epoch in epoch_list:            
+            args.epochs = epoch
+            
+            # Run the python script - record 
+            args.ad_path_test = f"_record_E{args.epochs}"
+            args.num_test_labels = args.num_cal_labels + num_test_labels_base
+            args.offset_after_skip = 0
+            snn_model_main(args)
 
         args.process_mode = "calibrate"
         
     
     if args.process_mode == "calibrate" and offset_after_skip_base < args.num_cal_labels:
-                   
-        # Run the python script - Calibrate
-        args.ad_path_test = "_test_E{}".format(args.epochs)
-        args.num_test_labels = args.num_cal_labels
-        args.offset_after_skip = 0
-        snn_model_main(args)
         
-        args.offset_after_skip = offset_after_skip_base
-        args.multi_path = args.multi_path.format(args.epochs, args.num_test_labels, args.threshold_i)
-        evaluate_snn_module(args)
+        epoch_list = np.arange(epoch_step, args_epochs_base, epoch_step)
+        print(epoch_list)
         
+        for epoch in epoch_list:            
+            args.epochs = epoch
+                        
+            # Run the python script - Calibrate
+            args.ad_path_test = "_test_E{}".format(args.epochs)
+            args.num_test_labels = args.num_cal_labels
+            args.offset_after_skip = 0
+            args.multi_path = args_multi_path_base.format(args.epochs, args.num_test_labels, args.threshold_i)
+            snn_model_main(args)
+            
+            args.offset_after_skip = offset_after_skip_base
+            evaluate_snn_module(args)
+            
         args.process_mode = "train"
 
 
@@ -117,6 +135,8 @@ if __name__ == "__main__":
                         help="Intensity scaling factor to change the range of input pixel values")
     parser.add_argument('--use_weighted_assignments', type=bool, default=False, 
                         help='Value to define the type of neuronal assignment to use: standard=False, weighted=True')
+    parser.add_argument('--shuffled', type=bool, default=True, 
+                        help='Value to define whether the order of input images should be shuffled: shuffled order of images=True, consecutive image order=False') 
     
     parser.add_argument('--skip', type=int, default=8, 
                         help='The number of images to skip between each place label.')
@@ -132,10 +152,12 @@ if __name__ == "__main__":
                         help='Number of excitatory output neurons. The number of inhibitory neurons are defined the same.')
     parser.add_argument('--threshold_i', type=int, default=0, 
                         help='Threshold value used to ignore the hyperactive neurons.')
+    parser.add_argument('--seed', type=int, default=0, 
+                        help='Set seed for random generator to define the shuffled order of input images, and random initialisation of learned weights.')
 
     parser.add_argument('--ad_path_test', type=str, default="_test_E{}", 
                         help='Additional string arguments to use for saving test outputs in testing')
-    parser.add_argument('--ad_path', type=str, default="_offset{}")             
+    parser.add_argument('--ad_path', type=str, default="_offset{}_S{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}") 
 
     parser.add_argument('--process_mode', type=str, choices=["train", "record", "calibrate", "test"], default="train", 
