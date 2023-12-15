@@ -104,13 +104,13 @@ python process_ensembles.py --SNN_data_path outputs_ne43200_L2700_offset3275_tcg
 
 Compute the recall at 1 (R@1) performance of our Ensemble of Modular SNNs with sequence matching on the Nordland dataset using reference traverses spring and fall, and query traverse summer:
 ```bash
-python process_seqmatch.py --SNN_data_path merged_results_ens_SNN_S5/ --mainfolder_path ./outputs/outputs_models_Nordland_SFS --seed 5 --num_query_imgs 3300 --num_cal_labels 600 --use_ensemble True
+python ens_seq/process_seqmatch.py --SNN_data_path merged_results_ens_SNN_S5/ --mainfolder_path ./outputs/outputs_models_Nordland_SFS --seed 5 --num_query_imgs 3300 --num_cal_labels 600 --use_ensemble True
 ```
 
 Compute the recall at 1 (R@1) performance of our Modular SNN with sequence matching on the Nordland dataset using reference traverses spring and fall, and query traverse summer:
 
 ```bash
-python3 process_seqmatch.py --SNN_data_path outputs_ne43200_L2700_offset3275_tcgi0.5_S{}_M2/standard/epoch{}_T3300_T{}/ --mainfolder_path ./outputs/outputs_models_Nordland_SFS --seed 0 --epochs 70 --thresholds 80 --num_query_imgs 3300 --num_cal_labels 600
+python ens_seq/process_seqmatch.py --SNN_data_path outputs_ne43200_L2700_offset3275_tcgi0.5_S{}_M2/standard/epoch{}_T3300_T{}/ --mainfolder_path ./outputs/outputs_models_Nordland_SFS --seed 0 --epochs 70 --thresholds 80 --num_query_imgs 3300 --num_cal_labels 600
 ```
 
 
