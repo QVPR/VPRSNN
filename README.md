@@ -13,7 +13,26 @@ This repository contains code for three of our papers:
 
 * Non-modular SNN: [Spiking Neural Networks for Visual Place Recognition via Weighted Neuronal Assignments (RAL + ICRA2022)](https://arxiv.org/abs/2109.06452) DOI: [10.1109/LRA.2022.3149030](https://doi.org/10.1109/LRA.2022.3149030)
 
-## License and Citation
+
+## Updates
+Dec 2023: 
+
+* Integration of ensembling and sequence matching for Modular SNN.
+* Option to shuffle the input images.
+* Addition of dataset configuration for Nordland, Oxford RobotCar, SFU Mountain, Synthia and St Lucia. 
+
+Oct 2023:
+
+* Release of learned weights of the Modular SNN on Nordland using reference traverses spring and fall.
+
+May 2023: 
+
+* Incorporating modularity for the SNN architecture.
+* Improved code readability. 
+* Reduced computation for loading datasets. 
+
+
+## License and Citations
 
 This code is licensed under [MIT License](./LICENSE). 
 
@@ -56,7 +75,7 @@ If you use our Non-modular SNN code, please cite the following [paper](https://a
 
 
 ## Overview
-Please refer to the readme files of the [Modular SNN](https://github.com/QVPR/VPRSNN/blob/main/modular_snn/README.md) and [Non-modular SNN](https://github.com/QVPR/VPRSNN/blob/main/non_modular_snn/README.md) folders for instructions to run the code for Modular SNN and Non-modular SNN works respectively. 
+Please refer to the readme files of the [Ensemble of Modular SNNs & sequence matching](https://github.com/QVPR/VPRSNN/blob/main/ens_seq/README.md), [Modular SNN](https://github.com/QVPR/VPRSNN/blob/main/modular_snn/README.md) and [Non-modular SNN](https://github.com/QVPR/VPRSNN/blob/main/non_modular_snn/README.md) folders for instructions to run the code for each work respectively. 
 
 
 ## Applications of Spiking Neural Networks in Visual Place Recognition (Ensemble of Modular SNNs with/without sequence matching)
