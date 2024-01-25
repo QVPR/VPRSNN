@@ -31,7 +31,7 @@ You can create the conda environment using one of the following options.
 Option 1: 
 
 ```bash
-conda create -n vprsnn -c conda-forge python numpy matplotlib pathlib opencv tqdm pickle5 brian2 scikit-learn ipykernel numba cudatoolkit autopep8 pandas seaborn wandb
+conda create -n vprsnn -c conda-forge python numpy matplotlib pathlib opencv tqdm pickle5 brian2 scikit-learn ipykernel numba cudatoolkit pytorch autopep8 pandas seaborn wandb
 ```
 
 Option 2 (using the provided environment.yml file): 
@@ -66,7 +66,7 @@ conda activate vprsnn
 * The entire Summer traverse is our query dataset, with less than 20% for calibration (600 images) and the rest for testing.
 
 #### Filtering Criteria for Nordland dataset:
-* Exclude images from segments where the train's speed is below 15 km/h. Refer to the filtered list in [`dataset_imagenames/nordland_imageNames.txt`](https://github.com/QVPR/VPRSNN/blob/modularSNN/dataset_imagenames/nordland_imageNames.txt) relevant to the Nordland dataset variation found [here](https://cloudstor.aarnet.edu.au/plus/s/2LtwUtLUFpUiUC8).
+* Exclude images from segments where the train's speed is below 15 km/h. Refer to the filtered list in [`dataset_imagenames/nordland_imageNames.txt`](https://github.com/QVPR/VPRSNN/blob/main/dataset_imagenames/nordland_imageNames.txt) relevant to the Nordland dataset variation found [here](https://huggingface.co/datasets/Somayeh-h/Nordland).
 
 #### Sampling Method:
 * Both datasets are sampled to extract images approximately every 100 meters (every 8th image). The data processing code is in [`tools/data_utils.py`](https://github.com/QVPR/VPRSNN/blob/main/tools/data_utils.py). 

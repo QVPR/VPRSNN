@@ -15,6 +15,11 @@ This repository contains code for three of our papers:
 
 
 ## Updates
+
+Jan 2024:
+* Updated the Nordland dataset download [link](https://huggingface.co/datasets/Somayeh-h/Nordland).
+
+
 Dec 2023: 
 
 * Integration of ensembling and sequence matching for Modular SNN.

@@ -14,6 +14,7 @@ dependencies:
   - ipykernel
   - numba
   - cudatoolkit
+  - pytorch
   - autopep8
   - pandas
   - seaborn
