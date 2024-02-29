@@ -137,7 +137,7 @@ if __name__ == "__main__":
     parser.add_argument('--process_mode', type=str, choices=["calibrate", "test"], default="calibrate", 
                         help='String indicator to define the mode (calibrate, test).')
     
-    parser.add_argument('--ad_path', type=str, default="_offset{}_S{}")             
+    parser.add_argument('--ad_path', type=str, default="_offset{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}")   
         
 

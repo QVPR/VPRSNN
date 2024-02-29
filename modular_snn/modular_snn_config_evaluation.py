@@ -299,7 +299,7 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=0, 
                         help='Set seed for random generator to define the shuffled order of input images, and random initialisation of learned weights.')
     
-    parser.add_argument('--ad_path', type=str, default="_offset{}_S{}")             
+    parser.add_argument('--ad_path', type=str, default="_offset{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}")  
 
     parser.set_defaults()

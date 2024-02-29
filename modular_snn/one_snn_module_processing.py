@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--ad_path_test', type=str, default="_test_E{}", 
                         help='Additional string arguments to use for saving test outputs in testing')
-    parser.add_argument('--ad_path', type=str, default="_offset{}_S{}")             
+    parser.add_argument('--ad_path', type=str, default="_offset{}")             
     parser.add_argument('--multi_path', type=str, default="epoch{}_T{}_T{}") 
 
     parser.add_argument('--process_mode', type=str, choices=["train", "record", "calibrate", "test"], default="train", 
