@@ -178,7 +178,7 @@ if __name__ == "__main__":
     parser.add_argument('--process_mode', type=str, choices=["train", "record", "calibrate", "test"], default="train", 
                         help='String indicator to define the mode (train, record, calibrate, test).')
     
-    parser.add_argument('--run_mode', type=str, choices=["local", "wandb_local", "wandb_hpc"], default="local", 
+    parser.add_argument('--run_mode', type=str, choices=["local", "hpc", "wandb_local", "wandb_hpc"], default="local", 
                         help='Mode to run the modular network.')
     parser.add_argument('--sweep_name', type=str, default="sweep_1", 
                         help='Wandb sweep name.')
