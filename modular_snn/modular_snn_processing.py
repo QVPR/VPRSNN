@@ -29,7 +29,6 @@ import os
 import sys
 import numpy as np
 import wandb
-from tools.hpc_utils import create_bashscript
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -37,6 +36,7 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 
+from tools.hpc_utils import create_bashscript
 from tools.wandb_utils import create_hpc_bashscript_wandb, get_wandb_sweep_id, setup_wandb_config
 
 
