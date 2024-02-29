@@ -127,6 +127,8 @@ if __name__ == "__main__":
                         help="Number of calibration place labels.")
     parser.add_argument('--num_test_labels', type=int, default=15, 
                         help='Number of testing place labels.')
+    parser.add_argument('--num_query_imgs', type=int, default=5, 
+                        help='Number of query images used for testing and calibration.')
     parser.add_argument('--tc_ge', type=float, default=1.0, 
                         help='Time constant of conductance of excitatory synapses AeAi')
     parser.add_argument('--tc_gi', type=float, default=0.5, 
