@@ -27,9 +27,9 @@ SOFTWARE.
 import argparse
 import os
 import sys
-import time
 import numpy as np
 import wandb
+from tools.hpc_utils import create_bashscript
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -106,7 +106,12 @@ def main(args):
             args.process_mode = mode_base
             process_one_snn_module(args) 
         
-    
+        
+        if args.run_mode == "hpc":
+            
+            create_bashscript(args) 
+            
+            
         elif args.run_mode == "wandb_hpc":
             
             create_hpc_bashscript_wandb(args, sweep_id)
