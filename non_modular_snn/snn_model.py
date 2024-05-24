@@ -79,7 +79,7 @@ def main(args):
     sys.stdout = Logger(outputsPath, logfile_name)
     print(args)
 
-    train_data_path, test_data_path = get_train_test_imagenames_path(args.dataset, args.folder_id)
+    train_data_path, test_data_path = get_train_test_imagenames_path(args.dataset, args.folder_id, args.process_mode)
 
     ad_path_test = args.ad_path_test if test_mode else ""
     skip = args.skip
