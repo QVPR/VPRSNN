@@ -100,7 +100,6 @@ def main(args):
         if args.run_mode == "local":
             
             from modular_snn.one_snn_module_processing import main as process_one_snn_module
-            args.ad_path = ad_path_base
             args.ad_path_test = ad_path_test_base
             args.multi_path = args_multi_path_base
             args.process_mode = mode_base
