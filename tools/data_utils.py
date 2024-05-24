@@ -202,7 +202,7 @@ def processImageDataset(path, type, imWidth, imHeight, num_patches=7, num_labels
     return data
 
 
-def get_train_test_imagenames_path(dataset, folder_id):
+def get_train_test_imagenames_path(dataset, folder_id, process_mode=""):
 
     if dataset == 'nordland':
         if folder_id == "NRD_SFS":
@@ -228,6 +228,9 @@ def get_train_test_imagenames_path(dataset, folder_id):
         train_data_path = [f'./dataset_imagenames/{dataset}_imageNames_190809_0845.txt']
         test_data_path = [f'./dataset_imagenames/{dataset}_imageNames_180809_1545.txt']
 
+    if process_mode == "record":
+        test_data_path = [train_data_path[0]]
+        
     return train_data_path, test_data_path
 
 
