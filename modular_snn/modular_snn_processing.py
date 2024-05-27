@@ -84,6 +84,7 @@ def main(args):
     ad_path_test_base = args.ad_path_test
     args_multi_path_base = args.multi_path
     num_test_labels_base = args.num_test_labels
+    args_epochs_base = args.epochs
     mode_base = args.process_mode
 
     if args.run_mode == "wandb_hpc" or args.run_mode == "wandb_local":
@@ -103,6 +104,7 @@ def main(args):
             args.ad_path_test = ad_path_test_base
             args.multi_path = args_multi_path_base
             args.process_mode = mode_base
+            args.epochs = args_epochs_base
             process_one_snn_module(args) 
         
         
