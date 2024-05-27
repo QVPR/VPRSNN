@@ -102,7 +102,7 @@ def main(args):
     else:
         training_result_monitors = training_result_monitor
         
-    training_input_numbers = np.load(main_folder_path + 'inputNumbers' + training_ending + ending)
+    training_input_numbers = np.load(main_folder_path + 'inputNumbers' + ending)
 
 
     testing_result_monitor = np.load(main_folder_path + 'resultPopVecs' + testing_ending + args.ad_path_test + ending)     
@@ -145,7 +145,7 @@ def main(args):
     np.save(data_path + "summed_rates_" + path_id, summed_rates)
     
     shuffled_indices_path = f"shuffled_indices_L{args.num_query_imgs}_S{args.seed}.npy"
-    if args.shuffled:
+    if args.shuffled and summed_rates.shape[0] == args.num_query_imgs and summed_rates.shape[1] == args.num_query_imgs:
         if not os.path.isfile(shuffled_indices_path):
             assert f"Shuffled indices file not found! {shuffled_indices_path}"
         shuffled_indices = np.load(shuffled_indices_path)
