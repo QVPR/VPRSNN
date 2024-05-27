@@ -78,7 +78,7 @@ def main(args):
     
     if args.process_mode == "record":
         
-        epoch_list = np.arange(epoch_step, args_epochs_base, epoch_step)
+        epoch_list = np.arange(epoch_step, args_epochs_base+1, epoch_step)
         print(epoch_list)
         
         for epoch in epoch_list:            
@@ -95,7 +95,7 @@ def main(args):
     
     if args.process_mode == "calibrate" and offset_after_skip_base < args.num_cal_labels:
         
-        epoch_list = np.arange(epoch_step, args_epochs_base, epoch_step)
+        epoch_list = np.arange(epoch_step, args_epochs_base+1, epoch_step)
         print(epoch_list)
         
         for epoch in epoch_list:            
