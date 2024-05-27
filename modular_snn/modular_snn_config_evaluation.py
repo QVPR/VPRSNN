@@ -60,7 +60,7 @@ def main(args):
 
     # define the range of the hyperparameter, epochs, to evaluate for calibration.
     epoch_step = 10
-    epoch_list = np.arange(epoch_step, args.epochs, epoch_step) if args.process_mode == "calibrate" else [args.epochs]
+    epoch_list = np.arange(epoch_step, args.epochs+1, epoch_step) if args.process_mode == "calibrate" else [args.epochs]
     print(epoch_list)
 
     args_multi_path_base = args.multi_path
