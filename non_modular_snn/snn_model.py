@@ -409,13 +409,14 @@ def main(args):
     print('output numbers: \n', outputNumbers, '\nSummed rates: \n', summed_rates)
 
     print('save results')
+    np.save(outputsPath + "resultPopVecs" + str(num_examples) + ad_path_test, result_monitor)
+    
     if not test_mode:
         save_theta(neuron_groups[Ae].theta, weightsPath, population_name, str(num_examples), use_initial_name=True)
         save_connections(connections, weightsPath, str(num_examples), use_initial_name=True)
-
-    np.save(outputsPath + "resultPopVecs" + str(num_examples) + ad_path_test, result_monitor)
-    np.save(outputsPath + "inputNumbers" + str(num_examples) + ad_path_test, input_numbers)
-
+        np.save(outputsPath + "inputNumbers" + ad_path_test, input_numbers)
+    else:
+        np.save(outputsPath + "inputNumbers" + str(num_examples) + ad_path_test, input_numbers)
 
     # plot results
     plot_2d_input_weights(connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1], tag="3")
