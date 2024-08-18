@@ -42,8 +42,6 @@ sys.path.append(parent_dir)
 from tools.logger import Logger
 from tools.data_utils import get_train_test_imagenames_path, processImageDataset
 import tools.snn_model_utils as snn_model_class
-from non_modular_snn.snn_model_evaluation import get_new_assignments, get_recognized_number_ranking
-from tools.snn_model_plot import plot_rateMonitors, plot_spikeMonitors, plot_spikeMonitorsCount
 
 
 # set the default target for code generation: 'auto', 'cython', 'numpy'
@@ -83,10 +81,7 @@ def main(args):
 
     ad_path_test = args.ad_path_test if test_mode else ""
     skip = args.skip
-    num_labels = args.num_labels
     n_i = args.n_e
-
-    use_monitors = False 
     repeat_no_spikes = False 
 
 
@@ -120,8 +115,7 @@ def main(args):
     weight_path = weightsPath if test_mode else random_path
     num_examples = num_testing_imgs if test_mode else num_training_imgs * args.epochs            
     update_interval = num_examples if test_mode else args.update_interval
-    num_training_examples =  num_training_imgs * args.epochs
-    do_plot_performance = True    
+    num_training_examples =  num_training_imgs * args.epochs  
 
     initial_resting_time = 0.5 * b2.second
     single_example_time = 0.35 * b2.second
@@ -324,18 +318,12 @@ def main(args):
     net = b2.Network()
     for obj_list in [neuron_groups, input_groups, connections, spike_monitors]: 
         for key in obj_list:
-            net.add(obj_list[key])        
-        
-    # run the simulation 
-    num_labels = args.num_labels if not test_mode else args.num_test_labels
+            net.add(obj_list[key])
     
     figures = [1,2]
 
     if not test_mode:
-        plot_2d_input_weights(connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1], tag="1")
-        
-    if do_plot_performance:
-        performance = plot_initial_performance(num_examples, update_interval, outputsPath, figures[0])
+        plot_2d_input_weights(connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[0], tag="_initial_weights")
 
     input_groups[Xe].rates = 0 * b2.Hz
     net.run(initial_resting_time)
@@ -344,9 +332,7 @@ def main(args):
     start_input_intensity = input_intensity
 
     previous_spike_count = np.zeros(args.n_e)
-    assignments = np.zeros(args.n_e)
     input_numbers = np.zeros(num_examples)
-    outputNumbers = np.zeros((num_examples, num_labels))
     result_monitor = np.zeros((update_interval,args.n_e))
     previous_spike_count = np.copy(spike_monitors[Ae].count[:])
 
@@ -366,16 +352,11 @@ def main(args):
         print('run number:', j+1, 'of', int(num_examples))
         net.run(single_example_time, report='text')
 
-        if j % update_interval == 0 and j > 0:
-            assignments = get_new_assignments(result_monitor[:], input_numbers[j-update_interval : j], args.n_e)
+        if j % update_interval == 0 and j > 0 and not test_mode:
 
-            print("Unique labels learnt: \n", np.unique(assignments))
             np.save(outputsPath + "resultPopVecs" + str(j), result_monitor) 
-
-            if not test_mode:                
-                plot_2d_input_weights(connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1])                
-                save_connections(connections, weightsPath, str(j), save_all=False)
-                save_theta(neuron_groups[Ae].theta, weightsPath, population_name, str(j))
+            save_connections(connections, weightsPath, str(j), save_all=False)
+            save_theta(neuron_groups[Ae].theta, weightsPath, population_name, str(j))             
 
         current_spike_count = np.asarray(spike_monitors[Ae].count[:]) - previous_spike_count
         previous_spike_count = np.copy(spike_monitors[Ae].count[:])
@@ -391,22 +372,12 @@ def main(args):
             result_monitor[j%update_interval,:] = current_spike_count
             input_numbers[j] = testing_data['y'][j%num_testing_imgs][0] if test_mode else training_data['y'][j%num_training_imgs][0]
 
-            outputNumbers[j,:], summed_rates = get_recognized_number_ranking(assignments, result_monitor[j%update_interval,:], np.arange(args.offset_after_skip, args.offset_after_skip+num_labels))
-
-            if j % update_interval == 0 and j > 0 and do_plot_performance: 
-                performance = plot_performance(performance, j, update_interval, outputNumbers, input_numbers, outputsPath, figures[0])
-                
-                print("Classification performance at {}: \n{}".format(j, performance[:int((j/float(update_interval))+1)] ) )      
-
             input_groups[Xe].rates = 0 * b2.Hz
             net.run(resting_time)
             input_intensity = start_input_intensity
-            j += 1
                 
     
     b2.device.delete(code=False)
-
-    print('output numbers: \n', outputNumbers, '\nSummed rates: \n', summed_rates)
 
     print('save results')
     np.save(outputsPath + "resultPopVecs" + str(num_examples) + ad_path_test, result_monitor)
@@ -415,15 +386,9 @@ def main(args):
         save_theta(neuron_groups[Ae].theta, weightsPath, population_name, str(num_examples), use_initial_name=True)
         save_connections(connections, weightsPath, str(num_examples), use_initial_name=True)
         np.save(outputsPath + "inputNumbers" + ad_path_test, input_numbers)
+        plot_2d_input_weights(connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1], tag="_after_training")
     else:
         np.save(outputsPath + "inputNumbers" + str(num_examples) + ad_path_test, input_numbers)
-
-    # plot results
-    plot_2d_input_weights(connections[Xe+Ae], n_input, args.n_e, outputsPath, figures[1], tag="3")
-
-    if spike_monitors:
-        plot_spikeMonitors(spike_monitors, outputsPath, args.epochs, test_mode)
-        plot_spikeMonitorsCount(spike_monitors, outputsPath)
 
     print('done')
     

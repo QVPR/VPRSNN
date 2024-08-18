@@ -49,7 +49,8 @@ def main(args):
     args_epochs_base = args.epochs
     
     # define the range of the hyperparameter, epochs, to evaluate for calibration. 
-    epoch_step = 10
+    # current setting only trains on one epoch, defined by args.epochs
+    epoch_step = args_epochs_base
     
     if args.process_mode == "test" and offset_after_skip_base >= args.num_cal_labels:
             
