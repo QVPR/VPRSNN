@@ -38,6 +38,14 @@ from tools.random_connection_generator import main as generate_random_connection
 from non_modular_snn.snn_model import main as snn_model_main
 from non_modular_snn.snn_model_evaluation import main as evaluate_snn_module
 
+'''
+_1: python3 modular_snn/modular_snn_processing.py --process_mode="train" --dataset='nordland' --folder_id='NRD_SFS' --skip=8 --update_interval=250 --epochs=30 --seed=0 --num_labels=3300 --num_test_labels=3300 --num_query_imgs=3300 --n_e=3300  
+_1: python3 modular_snn/modular_snn_processing.py --process_mode="test" --dataset='nordland' --folder_id='NRD_SFS' --skip=8 --update_interval=250 --epochs=30 --seed=0 --num_labels=3300 --num_test_labels=3300 --num_query_imgs=3300 --n_e=3300
+
+_2: python3 modular_snn/modular_snn_processing.py --process_mode="train" --dataset='ORC' --folder_id='ORC' --skip=8 --update_interval=250 --epochs=30 --seed=0 --num_labels=450 --num_test_labels=450 --num_query_imgs=450 --n_e=450
+_2: python3 modular_snn/modular_snn_processing.py --process_mode="test" --dataset='ORC' --folder_id='ORC' --skip=8 --update_interval=250 --epochs=30 --seed=0 --num_labels=450 --num_test_labels=450 --num_query_imgs=450 --n_e=450
+
+'''
 
 
 def main(args):    
