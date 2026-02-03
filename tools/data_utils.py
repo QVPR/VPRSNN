@@ -213,8 +213,12 @@ def get_train_test_imagenames_path(dataset, folder_id, process_mode=""):
             test_data_path =  [f'./dataset_imagenames/{dataset}_imageNames_winter.txt']
             
     elif dataset == 'ORC':
-        train_data_path = [f'./dataset_imagenames/{dataset}_imageNames_Sun.txt', f'./dataset_imagenames/{dataset}_imageNames_Rain.txt']
-        test_data_path =  [f'./dataset_imagenames/{dataset}_imageNames_Dusk.txt']
+        if folder_id == 'ORC' or folder_id == '':
+            train_data_path = [f'./dataset_imagenames/{dataset}_imageNames_Sun.txt', f'./dataset_imagenames/{dataset}_imageNames_Rain.txt']
+            test_data_path =  [f'./dataset_imagenames/{dataset}_imageNames_Dusk.txt']
+        elif folder_id == 'ORC_RD':
+            train_data_path = [f'./dataset_imagenames/{dataset}_imageNames_Rain.txt']
+            test_data_path =  [f'./dataset_imagenames/{dataset}_imageNames_Dusk.txt']
         
     elif dataset == 'SFU-Mountain':
         train_data_path = [f'./dataset_imagenames/{dataset}_imageNames_dry.txt']
