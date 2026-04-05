@@ -10,11 +10,13 @@
 This code is licensed under [MIT License](./LICENSE). If you use our Ensemble of Modular SNNs with/without sequence matching code, please cite the following [paper](https://arxiv.org/abs/2311.13186):
 
 ```
-@article{hussaini2023applications,
-  title={Applications of Spiking Neural Networks in Visual Place Recognition},
+@article{hussaini2024applications,
+  title={Applications of spiking neural networks in visual place recognition},
   author={Hussaini, Somayeh and Milford, Michael and Fischer, Tobias},
-  journal={arXiv preprint arXiv:2311.13186},
-  year={2023}
+  journal={IEEE Transactions on Robotics},
+  volume={41},
+  pages={518--537},
+  year={2024},
 }
 ```
 
