@@ -1,4 +1,4 @@
-# Spiking Neural Networks for Visual Place Recognition via Weighted Neuronal Assignments
+# Applications of Spiking Neural Networks in Visual Place Recognition
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 [![stars](https://img.shields.io/github/stars/QVPR/VPRSNN.svg?style=flat-square)](https://github.com/QVPR/VPRSNN/stargazers)
 ![GitHub repo size](https://img.shields.io/github/repo-size/QVPR/VPRSNN.svg?style=flat-square)
@@ -7,7 +7,7 @@
 
 This repository contains code for three of our papers: 
 
-* Ensembles of Modular SNNs with/without sequence matching: [Applications of Spiking Neural Networks in Visual Place Recognition](https://arxiv.org/abs/2311.13186)
+* Ensembles of Modular SNNs with/without sequence matching: [Applications of Spiking Neural Networks in Visual Place Recognition](https://arxiv.org/abs/2311.13186) DOI: [10.1109/TRO.2024.3508053](https://doi.org/10.1109/TRO.2024.3508053)
 
 * Modular SNN: [Ensembles of Compact, Region-specific & Regularized Spiking Neural Networks for Scalable Place Recognition (ICRA 2023)](https://arxiv.org/abs/2209.08723) DOI: [10.1109/ICRA48891.2023.10160749](https://doi.org/10.1109/ICRA48891.2023.10160749)
 
@@ -15,6 +15,9 @@ This repository contains code for three of our papers:
 
 
 ## Updates
+
+Apr 2026:
+* Added IEEE Transactions on Robotics reference
 
 Jan 2024:
 * Updated the Nordland dataset download [link](https://huggingface.co/datasets/Somayeh-h/Nordland).
@@ -44,11 +47,13 @@ This code is licensed under [MIT License](./LICENSE).
 If you use our Ensemble of Modular SNNs with/without sequence matching code, please cite the following [paper](https://arxiv.org/abs/2311.13186):
 
 ```
-@article{hussaini2023applications,
-  title={Applications of Spiking Neural Networks in Visual Place Recognition},
+@article{hussaini2024applications,
+  title={Applications of spiking neural networks in visual place recognition},
   author={Hussaini, Somayeh and Milford, Michael and Fischer, Tobias},
-  journal={arXiv preprint arXiv:2311.13186},
-  year={2023}
+  journal={IEEE Transactions on Robotics},
+  volume={41},
+  pages={518--537},
+  year={2024},
 }
 ```
 
@@ -58,10 +63,9 @@ If you use our Modular SNN code, please cite the following [paper](https://arxiv
 @inproceedings{hussaini2023ensembles,
   title={Ensembles of compact, region-specific \& regularized spiking neural networks for scalable place recognition},
   author={Hussaini, Somayeh and Milford, Michael and Fischer, Tobias},
-  booktitle={2023 IEEE International Conference on Robotics and Automation (ICRA)},
+  booktitle={IEEE International Conference on Robotics and Automation (ICRA)},
   pages={4200--4207},
   year={2023},
-  organization={IEEE}
 }
 ```
 
@@ -74,7 +78,6 @@ If you use our Non-modular SNN code, please cite the following [paper](https://a
   author={Hussaini, Somayeh and Milford, Michael J and Fischer, Tobias},
   journal={IEEE Robotics and Automation Letters},
   year={2022},
-  publisher={IEEE}
 }
 ```
 
